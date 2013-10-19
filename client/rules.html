@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Game: The Resistance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+  
+    <div class='navbar navbar-inverse navbar-static-top'>
+        <div class=navbar-inner>
+            <div class=container>
+                <a class=brand href='/'>The Resistance</a>
+                <ul class=nav>
+                    <li>
+                        <div class='navbar-form'>
+                            <input id=username type=text placeholder=username class=span2>
+                            <input id=password type=password placeholder=password class=span2>
+                            <button id=playButton class="btn btn-primary" type="button">Play!</button>
+                        </div>
+                    </li>            
+                    <li><a href='register.html'>Register</a></li>
+                    <li class=active><a href='#'>Rules</a></li>
+                    <li><a href='about.html'>About</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+        
+    <div class=container style='padding-top:40px'>
+        <div class=pull-right style='margin:20px'>
+            <img class="img-rounded" src="resistance.jpg">
+        </div>
+        <h3>Rules</h3>
+        <ul>
+        <li>The game requires between five and ten players.
+        <li>Approximately one third of the players are randomly chosen as spies; the rest are members of the Resistance.
+        <li>The spies know who the other spies are, but Resistance members do not.
+        <li>The game consists of up to five missions.
+        <li>Each mission has a leader. The leader proposes a mission team of a certain size, which the group approves by public vote.
+        <li>If the group does not approve the mission by a simple majority, leadership passes to the next player.
+        <li>If the group cannot approve a mission team after five attempts, the spies win.
+        <li>Once a mission team is chosen, it votes by secret ballot whether the mission succeeds or fails.
+        <li>Resistance members will always vote for success, but spies have the option of voting for success or failure.
+        <li>It usually only takes one spy on the mission team to sabotage a mission, but sometimes the fourth mission requires two.
+        <li>If three missions succeed, the Resistance wins. If three fail, the spies win.
+        </ul>
+        
+        <p>And finally, the last, but most important rule of all:</p>
+        
+        <ul>
+        <li>You are allowed to say anything, to any one, at any time -- as long as it is said publicly.
+        </ul>
+
+        <p>Additionally, there are two rule variants:</p>
+        
+        <ol>
+        <li><strong>Original Resistance</strong>: At the beginning of the first round of every mission, the leader distributes a number of plot cards from a shuffled deck to other players. These plot cards can be used to reveal additional pieces of information to certain players or to the entire group.
+        <li><strong>Resistance: Avalon</strong>: One of the Resistance players (designated "Merlin") is told who the spies are. He can use this knowledge to help his teammates, but beware -- the spies musn't figure out who Merlin is! At the end of the game, one of the spies (designated "the Assassin") is allowed to kill off one Resistance player; if he picks Merlin, the spies win!
+        </ol>
+        </div>
+    </div>
+    
+    <script src="jquery-1.10.1.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="login.js"></script>
+  </body>
+</html>

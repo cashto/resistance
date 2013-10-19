@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Game: The Resistance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    
+    <style>
+        .fill { background: #DDDDFF; display:none }
+        
+        .usertile
+        {
+            padding: 2px;
+            text-align: center;
+            position: absolute;
+            width: 110px;
+            word-break: break-all;
+        }
+        
+        .usertile img
+        {
+            width: 96px;
+            height: 96px;
+        }
+        
+        .highlight
+        {
+            padding: 0px;
+            border: 2px solid #FFFF00;
+            background: #FFFF80;
+            border-radius: 8px;
+        }
+        
+        .tab-highlight
+        {
+            background: #FFFF80;
+        }
+        
+        .invisible
+        {
+            visible: none
+        }
+        
+        .hidden
+        {
+            display: none
+        }
+        
+        .normal-word-break 
+        {
+            word-break: normal;
+        }
+
+        #lobby-container,
+        #game-container
+        {
+            margin-right: 180px; 
+        }
+        
+        #lobby-chat-text,
+        #lobby-games-players,
+        #game-history,
+        #chat-text,
+        #all-chat-text
+        {
+            overflow-y: auto; 
+            overflow-x: hidden;
+        }
+        
+        td.final-col
+        {
+            text-align: left;
+        }
+        
+        #games-list
+        {
+            cursor: pointer;
+        }
+        
+        #votelog-tab td
+        {
+            text-align: center;
+            white-space: nowrap;
+            border: solid 1px black;
+        }
+        
+        #votelog-tab td.leader
+        {
+            border: solid 3px black;
+        }
+        
+        #votelog-tab td.approve
+        {
+            background: #BBFFBB;
+        }
+        
+        #votelog-tab td.reject
+        {
+            background: #FFBBBB;
+        }        
+    </style>    
+  </head>
+  <body>
+    <div class='navbar navbar-inverse navbar-static-top'>
+        <div class=navbar-inner>
+            <div class=container>
+                <a class=brand href='/'>The Resistance</a>
+                <ul class=nav>
+                    <li><a href='register.html'>Register</a></li>
+                    <li><a href='rules.html'>Rules</a></li>
+                    <li><a href='about.html'>About</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div style='margin: 20px 40px 20px 20px; min-width: 700px'>        
+        <div class='fill pull-right' style='width:160px; height:600px'></div>
+
+        <!-- Lobby -->
+        <div id=lobby-container>
+            <div style='float:right; width:300px'>
+                <div id=lobby-games-players class='text-center' style='height:500px'>
+                    <table class='table table-hover table-striped'>
+                        <thead><tr><th>Game</th><th>Status</th><th>Type</th></tr></thead>
+                        <tbody id=games-list></tbody>
+                    </table>
+                                        
+                    <div class="btn-group">
+                      <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                        Create New Game
+                        <span class="caret"></span>
+                      </a>
+                      <ul class="dropdown-menu">
+                        <li><a id=new-game-basic href='#'>Basic (without cards)</a>
+                        <li><a id=new-game-original href='#'>Original (with cards)</a>
+                        <li><a id=new-game-avalon href='#'>Avalon (with Merlin)</a>
+                      </ul>
+                    </div>
+                    
+                    <p></p>
+                    
+                    <table class='table table-striped'>
+                        <thead><tr><th>Players Online</th></tr></thead>
+                        <tbody id=player-list></tbody>
+                    </table>
+                </div>
+            </div>
+            <div style='margin-right:320px'>
+                <div id=lobby-chat-text style='height: 500px'></div>
+            </div>
+            <p>
+            <div class='row-fluid'>
+                <div class='well'>
+                    <input id=lobby-chat-input type=text class='span12' placeholder='Type a message'>
+                </div>
+            </div>
+        </div>
+            
+        <!-- Main game -->
+        <div id=game-container class='hidden'>
+            <div style='height:500px'>
+                <div id=game-field style='position:relative'></div>
+                <div id=guns-field style='position:relative'></div>
+                <div class='text-right'>
+                    <button id=leave-game class='btn'>Exit to Lobby</button>
+                </div>
+                <div id=scoreboard class='text-center' style='position:relative; top:190px; z-index:-1'></div>
+            </div>
+           
+            <div class='well'>
+                <span id=msg-text style='margin-right: 40px'></span>
+                <span id=msg-buttons style='white-space:nowrap'></span>
+            </div>
+            
+            <ul class='nav nav-tabs'>
+                <li id=all-chat-nav-tab><a href='#all-chat-tab' data-toggle=tab>All chat</a></li>
+                <li id=chat-nav-tab class='active'><a href='#chat-tab' data-toggle=tab>Game chat</a></li>
+                <li><a href='#gamelog-tab' data-toggle=tab>History</a></li>
+                <li><a href='#votelog-tab' data-toggle=tab>Vote History</a></li>
+                <li><a href='#help-tab' data-toggle=tab>Help</a></li>
+            </ul>
+            
+            <div class='tab-content'>
+                <div class='tab-pane' id=all-chat-tab>
+                    <div id=all-chat-text style='height:200px'></div>
+                    <p></p>
+                    <div class='row-fluid'>
+                        <input id=all-chat-input type=text class='span12' placeholder='Type a message'>
+                    </div>
+                </div>
+
+                <div class='tab-pane active' id=chat-tab>
+                    <div id=chat-text style='height:200px'></div>
+                    <p></p>
+                    <div class='row-fluid'>
+                        <input id=chat-input type=text class='span12' placeholder='Type a message'>
+                    </div>
+                </div>
+                
+                <div class='tab-pane' id=gamelog-tab>
+                    <button id=prev-gamelog class='btn'><i class='icon-chevron-left'></i></button>
+                    <strong><span id=gamelog-page></span></strong>
+                    <button id=next-gamelog class='btn'><i class='icon-chevron-right'></i></button>
+                    <p><div id=gamelog-text class='pull-left' style='margin-left:20px; min-height:180px'></div>                        
+                </div>
+                
+                <div class='tab-pane' id=votelog-tab>
+                    <div id=votelog>
+                    </div>
+                    
+                    <p></p>
+                    
+                    <ul>
+                        <table>
+                            <tr><td class=leader></td><td>Leader</td></tr>
+                            <tr><td><i class=icon-ok></i></td><td>On mission team</td></tr>
+                            <tr><td class=approve></td><td>Approved vote</td></tr>
+                            <tr><td class=reject></td><td>Rejected vote</td></tr>
+                        </table>
+                    </ul>
+                </div>
+                
+                <div class='tab-pane' id=help-tab>
+                    <ul>
+                        <li><strong>Keeping a Close Eye on You</strong>: Learn whether a player played success or failure during a mission.
+                        <li><strong>Strong Leader</strong>: Become the leader.
+                        <li><strong>No Confidence</strong>: Veto an approved mission team.
+                        <li><strong>In the Spotlight</strong>: Force a player to vote publicly on mission success or failure.
+                        <li><strong>Establish Confidence</strong>: Immediate use. The leader must reveal their identity to a player of their choosing.
+                        <li><strong>Overheard Conversation</strong>: Immediate use. The person to whom this card is given can learn the identity of a neighboring player.
+                        <li><strong>Open Up</strong>: Immediate use. The person to whom this card is given must disclose their identity to a player of their choosing.
+                        <li><strong>Take Responsibility</strong>: Immediate use. The person to whom this card is given must take a card from another player.
+                        <li><strong>Opinion Maker</strong>: The person to whom this card is given must vote first and publicly for the rest of the game.
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="jquery-1.10.1.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src='main.js'></script>
+  </body>
+</html>

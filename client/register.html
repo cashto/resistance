@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Game: The Resistance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+    <div class='navbar navbar-inverse navbar-static-top'>
+        <div class=navbar-inner>
+            <div class=container>
+                <a class=brand href='/'>The Resistance</a>
+                <ul class=nav>
+                    <li>
+                        <div class='navbar-form'>
+                            <input id=username type=text placeholder=username class=span2>
+                            <input id=password type=password placeholder=password class=span2>
+                            <button id=playButton class="btn btn-primary" type="button">Play!</button>
+                        </div>
+                    </li>            
+                    <li class=active><a href='#'>Register</a></li>
+                    <li><a href='rules.html'>Rules</a></li>
+                    <li><a href='about.html'>About</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class=container style='padding-top:40px'>
+        <div class="row-fluid">
+            <div class="offset3 span6">
+                <p>
+                    <div class="input-prepend">
+                        <span class="add-on"><i class="icon-user"></i></span>
+                        <input id=regusername type=text placeholder=username>
+                    </div>
+                </p>
+                <p>
+                    <div class="input-prepend">
+                        <span class="add-on"><i class="icon-lock"></i></span>
+                        <input id=regpassword1 type=password placeholder=password>
+                    </div>
+                </p>
+                <p>
+                    <div class="input-prepend">
+                        <span class="add-on"><i class="icon-lock"></i></span>
+                        <input id=regpassword2 type=password placeholder="re-enter password">
+                    </div>
+                </p>
+                <p>
+                    <div class="input-prepend">
+                        <span class="add-on"><i class="icon-envelope"></i></span>
+                        <input id=regemail type=text placeholder=email>
+                    </div>
+                </p>
+                
+                <script>var RecaptchaOptions = { theme : 'clean' }; </script>
+                <script src="http://www.google.com/recaptcha/api/challenge?k=6LdBd-MSAAAAAPcRQwQC6N6vk-6Fmxlxq6C4KIK1"></script>
+                <p></p>
+                
+                <button id=registerBtn class="btn btn-primary" type="button">Register!</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="jquery-1.10.1.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="login.js"></script>
+    <script>
+        $(function() {
+            $('#registerBtn').click(function() {
+                $.ajax('/server/register', { 
+                    type: 'POST', 
+                    processData: false,
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        username: $('#regusername').val(), 
+                        password1: $('#regpassword1').val(),
+                        password2: $('#regpassword2').val(),
+                        email: $('#regemail').val(),
+                        challenge: $('#recaptcha_challenge_field').val(),
+                        response: $('#recaptcha_response_field').val()
+                    })
+                })
+                .done(function () {
+                    window.alert('Registration succeeded.');
+                    window.location = 'index.html';
+                })
+                .fail(function () {
+                    Recaptcha.reload();
+                    window.alert('Registration failed.');
+                });        
+            });
+        });
+    </script>
+
+  </body>
+</html>

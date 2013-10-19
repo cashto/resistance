@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Game: The Resistance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+    <div class='navbar navbar-inverse navbar-static-top'>
+        <div class=navbar-inner>
+            <div class=container>
+                <a class=brand href='/'>The Resistance</a>
+                <ul class=nav>
+                    <li>
+                        <div class='navbar-form'>
+                            <input id=username type=text placeholder=username class=span2>
+                            <input id=password type=password placeholder=password class=span2>
+                            <button id=playButton class="btn btn-primary" type="button">Play!</button>
+                        </div>
+                    </li>            
+                    <li><a href='register.html'>Register</a></li>
+                    <li><a href='rules.html'>Rules</a></li>
+                    <li class=active><a href='#'>About</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class=container style='padding-top:40px'>
+        <div class=row>
+            <div class='span6'>
+                <h3>About this website</h3>
+                
+                <p>I built this as a sort of side project to help out a group of my (geographically challenged) friends 
+                who had gotten addicted to the game and who were finding it difficult to play over Skype and email.
+                
+                <p>It also gave me an excuse to learn / play around with the following bits of technology:</p>
+                
+                <ul>
+                <li>Front end: <a href="http://jquery.com/">jQuery</a> and <a href="http://twitter.github.io/bootstrap/">Twitter Bootstrap</a>.</li>
+                <li>Back end: <a href="http://www.microsoft.com/en-us/sqlserver/editions/2012-editions/express.aspx">MS SQL Server Express</a>, <a href="http://nodejs.org/">node.js</a>, <a href="http://coffeescript.org/">CoffeeScript</a>, and <a href="http://expressjs.com/">Express</a>.</li>
+                <li>Cloud platform: <a href="http://aws.amazon.com/">Amazon Web Services</a>.</li>
+                </ul>
+
+                <p>Direct your gripes, etc. to cashto at gmail dot com.</p>
+                
+                <h3>Changelog</h3>
+                
+                <h5>July 28th, 2013</h5>
+                
+                <ul><li>Added Basic (no cards) game type.</ul>
+                
+            </div>
+            <div class='span6'>
+                <img src=ss.png>
+            </div>
+        </div>
+    </div>
+    
+    <script src="jquery-1.10.1.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="login.js"></script>
+  </body>
+</html>

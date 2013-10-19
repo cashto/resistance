@@ -18,6 +18,6 @@
             pwd=<password>;
 
 * From the "server" directory, run `build %RELDIR%`
-* Run `node.js %RELDIR%\Server.js`
+* Run `node %RELDIR%\Server.js`
 * Navigate to [http://localhost/](http://localhost/)
 

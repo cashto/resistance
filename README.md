@@ -49,3 +49,10 @@ The `Game::askOne()` method sends a question to a player. Every question has an 
 The `Game::ask()` method asks a list of questions in parallel.  This method takes a callback function which is invoked when all questions have been answered. `Game::ask()` also updates the status message each time a question is answered.
 
 In Main.coffee, players are garbage collected (and logged out) after ten minutes of inactivity.
+
+### Testing Changes
+
+Sorry, there's no comprehensive test suite.  However, it is fairly easy to exercise your changes using two tools:
+
+* **misc\Bot.coffee**: This instantiates a bunch of robot players that try to join an existing game (or, rarely, create new games of their own). These bots play randomly.
+* **Test.coffee**: For more targetted tests of specific, hard-to-reach scenarios, you can instantiate a Game object, mock out Lobby and Database objects that it uses, then programmatically simulate the receipt of user commands. You can then inspect the received commands in each player's queue. See Test.coffee for an example of how to do this.

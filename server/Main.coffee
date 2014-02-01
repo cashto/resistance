@@ -62,7 +62,7 @@ app.post '/server/login', (req, res) ->
             g.playersBySessionKey[sessionKey] = g.playersById[playerId]
             res.cookie 'sessionKey', sessionKey 
             res.send(200)
-            g.db.login playerId, req.ip, (err, x) ->
+            g.db.login playerId, (req.ip or "0.0.0.0"), (err, x) ->
                 console.log err if err?
 
 app.post '/server/register', (req, res) ->

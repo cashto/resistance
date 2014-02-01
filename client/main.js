@@ -370,12 +370,17 @@ var handlers = {
 
 var drawGames = function() {
     var html = '';
+    var gameTypeNames = {
+        1: 'Original',
+        2: 'Avalon',
+        3: 'Basic'
+    };
     for (var i = 0; i < g.games.length; ++i) {
         html += 
             '<tr onclick="onJoinGame(' + g.games[i].id + ')">' +
                 '<td>' + g.games[i].id + '</td>' +
                 '<td>' + g.games[i].msg + '</td>' +
-                '<td>' + ((g.games[i].gameType == 1) ? 'Original' : 'Avalon') + '</td>' +
+                '<td>' + gameTypeNames[g.games[i].gameType] + '</td>' +
             '</tr>';
     }
     $('#games-list').html(html);

@@ -17,7 +17,7 @@
             uid=<userid>;
             pwd=<password>;
 
-* From the "server" directory, run `build %RELDIR%`
+* From the "server" directory, run `build`
 * Run `node %RELDIR%\Server.js`
 * Navigate to [http://localhost/](http://localhost/)
 

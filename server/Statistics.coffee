@@ -26,7 +26,7 @@ class Statistics
             
         html = "<table><tr><th>Player</th> <th>Resistance</th> <th>Spy</th> <th>Total</th></tr>"
         filteredPlayers = tables.players
-            .filter((i) => i.lastGameTime? and now - i.lastGameTime < oneMonth)
+            .filter((i) -> i.lastGameTime? and now - i.lastGameTime < oneMonth)
             .sort((a,b) -> a.toLowerCase().localeCompare(b.toLowerCase()))
             
         for player in filteredPlayers
@@ -42,23 +42,40 @@ class Statistics
     getRecentGames: (tables) ->
         html = "<table><tr><th>Start Time</th> <th>Type</th> <th>Duration (min)</th> <th>Resistance</th> <th>Spies</th></tr>"
         
+        gameTypeName =
+            1: "Original"
+            2: "Avalon"
+            3: "Basic"
+            
         for i in [0 ... 25]
             game = tables.game[i]
             html += "<tr>" +
                 "<td>#{game.startTime.toUTCString()}</td> " +
-                "<td>#{game.type}</td> " +
+                "<td>#{gameTypeName[game.type]}</td> " +
                 "<td>#{(game.endTime.getTime() - game.startTime.getTime()) / 60000}</td> " +
-                "<td>#{game.resistance.map((i) => i.Name).join(', ')}</td> " +
-                "<td>#{game.spies.map((i) => i.Name).join(', ')}</td></tr>" +
+                "<td>#{game.resistance.map((i) -> i.Name).join(', ')}</td> " +
+                "<td>#{game.spies.map((i) -> i.Name).join(', ')}</td></tr>" +
             
         html += "</table>"
         return html
         
-    getWinRates: (tables) ->    
+    getWinRates: (tables) ->
         html = "<table><tr><th></th> <th>Original</th> <th>Avalon</th> <th>Basic</th></tr>"
+        
+        for n in [5 .. 10]
+            html += "<tr>"
+            for type in [1 .. 3]
+                games = tables.games.filter((i) -> i.spies.length + i.resistance.length is n and i.gameType is type)
+                html += "<td>#{@frac(games.filter((i) -> i.spiesWin).length, games.length)}</td> "
+            html += "</tr>"
+            
         html += "</table>"
         return html
         
     getActivity: (tables) ->
         html = "NYI"
         return html
+        
+    frac: (n, d) ->
+        pct = if d is 0 then 0 else 100 * n / d
+        return "#{pct.toFixed(1)}<br><small>#{n} / #{d}</small>"

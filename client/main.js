@@ -62,6 +62,9 @@ var onEnter = function(cmd) {
             event.target.value = '';
             event.preventDefault();
         }
+        else if (event.keyCode === 13 && event.target.value === ''){
+            event.preventDefault();
+        }
     };
 }
 

@@ -57,7 +57,7 @@ var onLeaveGame = function() {
 
 var onEnter = function(cmd) {
     return function(event) {
-        if (event.keyCode === 13) {
+        if (event.keyCode === 13 && event.target.value != '') {
             sendAjax({ cmd:cmd, msg:event.target.value });
             event.target.value = '';
             event.preventDefault();

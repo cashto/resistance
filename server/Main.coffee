@@ -32,6 +32,9 @@ app = express()
 app.use express.json()
 app.use express.cookieParser()
 
+app.get '/server/stats/:1', (req, res) ->
+    res.send(200, g.stats(param))
+    
 app.get '/server/play', (req, res) ->
     player = getPlayer(req, res)
     return if not player?

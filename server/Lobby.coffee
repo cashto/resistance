@@ -68,3 +68,4 @@ class Lobby extends Room
         player.send '+game', { id:game.id, msg:game.getLobbyStatus(), gameType:game.gameType }
         
 g.lobby = new Lobby()
+g.stats = new Statistics()

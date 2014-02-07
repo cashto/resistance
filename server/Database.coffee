@@ -1,4 +1,4 @@
-sql = require 'sqlserver'
+sql = require 'msnodesql'
 
 class Database
     constructor: ->

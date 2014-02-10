@@ -32,8 +32,9 @@ app = express()
 app.use express.json()
 app.use express.cookieParser()
 
-app.get '/server/stats/:1', (req, res) ->
-    res.send(200, g.stats(param))
+app.get '/server/stats/:statType', (req, res) ->
+    res.header('Cache-Control', 'max-age=900')
+    res.send(200, g.stats.get(req.params.statType))
     
 app.get '/server/play', (req, res) ->
     player = getPlayer(req, res)
@@ -100,15 +101,11 @@ app.post '/server/register', (req, res) ->
     
 app.use express.static(__dirname + "/client")
 
-startServer = ->
+g.db = new Database()
+g.db.initialize (err) -> 
+    return console.log err if err
+    g.lobby = new Lobby()
+    g.stats = new Statistics(g.db)
     setInterval gcPlayers, 60000
     app.listen(80)
     console.log 'Server started.'
-
-#return startServer()
-
-g.db.initialize (err) -> 
-    if err
-        console.log err
-    else
-        startServer()

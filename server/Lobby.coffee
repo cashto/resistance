@@ -1,8 +1,3 @@
-g =
-    playersById: {}
-    playersBySessionKey: {}
-    db: new Database()
-
 class Lobby extends Room
     constructor: () ->
         super
@@ -66,6 +61,3 @@ class Lobby extends Room
             
     sendGame: (game, player) ->
         player.send '+game', { id:game.id, msg:game.getLobbyStatus(), gameType:game.gameType }
-        
-g.lobby = new Lobby()
-g.stats = new Statistics()

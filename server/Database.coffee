@@ -20,7 +20,7 @@ class Database
         @connection.query(
             "INSERT Logins(playerId, ip) VALUES (?, CONVERT(BINARY(4), ?, 2))"
             [playerId, ip.split('.').map(hexByte).join('')]
-            cb);
+            cb)
             
     getUserId: (name, password, cb) ->
         @connection.query(
@@ -82,3 +82,16 @@ class Database
             "UPDATE Games SET endTime=SYSUTCDATETIME(), spiesWin=? WHERE id=?"
             [spiesWin, gameId]
             cb)
+            
+    getTables: (cb) ->
+        async.map [
+            "SELECT id, startTime, endTime, spiesWin, gameType FROM Games WHERE endTime IS NOT NULL ORDER BY startTime"
+            "SELECT id, name FROM Users"
+            "SELECT gameId, playerId, isSpy FROM GamePlayers as gp, Games as g WHERE gp.gameId = g.id AND g.endTime IS NOT NULL"],
+            (item, cb) => @connection.query item, [], cb
+            (err, res) =>
+                return cb(err) if err?
+                cb null,
+                    games: res[0]
+                    players: res[1]
+                    gamePlayers: res[2]

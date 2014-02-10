@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Online Game: The Resistance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <script src="jquery-1.10.1.min.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script>
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(function() {
+            $("#activeplayers").load("/server/stats/activeplayers");
+            $("#recentgames").load("/server/stats/recentgames");
+            $("#winrates").load("/server/stats/winrates");
+            $("#activity").load("/server/stats/activity");
+            $("#leaderboard").load("/server/stats/leaderboard");
+        });
+    </script>
+  </head>
+  <body>
+    <div class='navbar navbar-inverse navbar-static-top'>
+        <div class=navbar-inner>
+            <div class=container>
+                <a class=brand href='/'>The Resistance</a>
+                <ul class=nav>
+                    <li>
+                        <div class='navbar-form'>
+                            <input id=username type=text placeholder=username class=span2>
+                            <input id=password type=password placeholder=password class=span2>
+                            <button id=playButton class="btn btn-primary" type="button">Play!</button>
+                        </div>
+                    </li>            
+                    <li><a href='register.html'>Register</a></li>
+                    <li><a href='rules.html'>Rules</a></li>
+                    <li><a href='about.html'>About</a></li>
+                    <li class=active><a href='#'>Statistics</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        td.info { font-weight: bold; }
+    </style>
+    
+    <div class=container style='padding-top:40px'>
+        <h3>Most Active Players (Past 30 Days)</h3>
+        <div id=activeplayers></div>    
+    
+        <h3>Last 25 Games</h3>
+        <div id=recentgames></div>
+        
+        <h3>Server Activity</h3>
+        <div id=activity></div>
+        <div id=activityChart></div>
+
+        <h3>Spy Win Rates</h3>
+        <div id=winrates></div>
+        
+        <h3>Player Win Rates</h3>
+        <div id=leaderboard></div>
+    </div>
+    
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="login.js"></script>
+    <script>
+        function drawChart(dataJson) {
+            var data = google.visualization.arrayToDataTable(dataJson);
+            var options = {
+                height: 300
+            };
+            var chart = new google.visualization.LineChart(document.getElementById('activityChart'));
+            chart.draw(data, options);
+        }
+    </script>
+  </body>
+</html>

@@ -1,11 +1,19 @@
 ### Getting Started
 
-* Install [Node.JS](http://nodejs.org/dist/v0.8.26/) v0.8.26.
+##### Install dependencies
+
+* Install [Node.JS](http://nodejs.org/dist/v0.8.26/) v0.8.26.  **It is important to install this version, and not a newer one, because the Microsoft driver below is only compatible with v0.8.x releases of Node.JS.**
+* Install [Microsoft Driver for Node.JS](http://www.microsoft.com/en-us/download/details.aspx?id=29995).
 * From the command line, run `npm install -g coffee-script` to install CoffeeScript. 
+
+##### Create the database
+
 * Install [MS SQL Server Express](http://www.microsoft.com/en-us/download/details.aspx?id=29062).
-* Install [Microsoft Driver for Node.JS](http://www.microsoft.com/en-us/download/details.aspx?id=29995). **This driver is only compatible with v0.8.x releases of Node.JS, so it is important to use this version.**
 * Create a "resistancetest" database in MS SQL Server Express.
-* Run recreatedb.sql on the database.
+* Run misc\recreatedb.sql on the database.
+
+##### Build and run the server
+
 * Set environment variable `RESISTANCE_DB_CONNECTION_STRING`.
 
         set RESISTANCE_DB_CONNECTION_STRING=
@@ -14,8 +22,7 @@
             Database=resistancetest;
             uid=<userid>;
             pwd=<password>;
-
-* Run `build`
+* Run `build.cmd`
 * Run `node release\Server.js`
 * Navigate to [http://localhost/](http://localhost/)
 

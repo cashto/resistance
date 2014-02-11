@@ -8,7 +8,6 @@ REM Install dependencies.
 cd release
 copy ..\package.json > nul
 call npm install
-del package.json
 cd ..
 
 REM Compile the server.

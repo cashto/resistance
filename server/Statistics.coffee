@@ -75,8 +75,8 @@ class Statistics
         for player in filteredPlayers
             html += "<tr>" +
                 "<td>#{player.name}</td> " +
-                "<td>#{@frac(player.spyWins, player.spyGames)}</td> " +
                 "<td>#{@frac(player.resistanceWins, player.resistanceGames)}</td> " +
+                "<td>#{@frac(player.spyWins, player.spyGames)}</td> " +
                 "<td>#{@frac(player.spyWins + player.resistanceWins, player.spyGames + player.resistanceGames)}</td></tr>"
                 
         html += "</table>"
@@ -97,8 +97,8 @@ class Statistics
                 "<td>#{gameTypeName[game.gameType]}</td> " +
                 "<td>#{game.spies.length + game.resistance.length}</td> " +
                 "<td>#{((game.endTime.getTime() - game.startTime.getTime()) / 60000).toFixed(0)}</td> " +
-                "<td class='#{if game.spiesWin then 'info' else ''}'>#{game.resistance.map((i) -> i.name).join(', ')}</td> " +
-                "<td class='#{if game.spiesWin then '' else 'info'}'>#{game.spies.map((i) -> i.name).join(', ')}</td></tr>"
+                "<td class='#{if game.spiesWin then '' else 'info'}'>#{game.resistance.map((i) -> i.name).join(', ')}</td> " +
+                "<td class='#{if game.spiesWin then 'info' else ''}'>#{game.spies.map((i) -> i.name).join(', ')}</td></tr>"
             
         html += "</table>"
         return html
@@ -131,7 +131,7 @@ class Statistics
             for player in game.resistance
                 hist[week].players[player.id] = true
                 
-        rows = for week in Object.keys(hist).sort((a,b) -> a - b)
+        rows = for week in Object.keys(hist).sort((a,b) -> a - b)[...-1]
             "[new Date(#{week * millisInWeek}), #{hist[week].games}, #{Object.keys(hist[week].players).length}],\n"
         
         html = "<script>drawChart([['Date', 'Games', 'Players'], #{rows.join('')}]);</script>"

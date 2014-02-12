@@ -39,6 +39,12 @@ class Game extends Room
             approve: []
             reject: []
             onteam: []
+        @avalonOptions =
+            usePercival: false
+            useMorgana: false
+            useMordred: false
+            useOberon: false
+            combineMordredAndAssassin: false
     
     onRequest: (player, request) ->
         if @dbId? and request.cmd not in ['chat', 'allChat']
@@ -109,8 +115,18 @@ class Game extends Room
     onChoose: (player, request) ->
         question = @findQuestion player, request
         return if not question?
-        throw "Invalid response" if request.choice not in question.question.choices
-        @answerQuestion question, request.choice
+        
+        choiceMatches = (choice, requestChoice) ->
+            if typeof(choice) is 'string'
+                return requestChoice is choice
+            else
+                return requestChoice in choice[1..]
+                
+        for choice in question.question.choices
+            if choiceMatches(choice, request.choice)
+                return @answerQuestion question, request.choice
+                
+        throw "Invalid response"
         
     onChoosePlayers: (player, request) ->
         question = @findQuestion player, request
@@ -165,21 +181,26 @@ class Game extends Room
             @setStatus "Waiting for #{gameController} to start the game ..."
         
         if @questions.every((i)->i.player isnt gameController)
+            choices = ['OK', 'Remove player']
+            choices.push(@getAvalonOptions()) if @gameType is AVALON_GAMETYPE
             @askOne gameController,
                 cmd: 'choose'
-                msg: 'Press OK to start game.'
-                choices: ['OK', 'Remove player']
+                msg: "Press OK to start game #{@getAvalonRolesString()}."
+                choices: choices
                 (response) =>
                     switch response.choice
                         when 'OK'
-                            if @activePlayers.length < 5
-                                gameController.sendMsg 'This game needs 5 or more players to start.'
+                            if @activePlayers.length < @getRequiredPlayers()
+                                gameController.sendMsg "This game needs at least #{@getRequiredPlayers()} players to start."
                                 @askToStartGame()
                             else 
                                 @startGame()
                         when 'Remove player'
                             @askToRemovePlayer(gameController)
-
+                        else
+                            @setAvalonOption(response.choice)
+                            @askToStartGame()
+                            
     askToRemovePlayer: (gameController) ->
         @askOne gameController,
             cmd: 'choosePlayers'
@@ -756,3 +777,72 @@ class Game extends Room
     setGuns: (guns) ->
         @guns = guns
         @sendAll 'guns', { players: guns }
+        
+    getAvalonOptions: ->
+        ans = ['Options']
+        
+        if @avalonOptions.usePercival
+            ans.push(if @avalonOptions.useMorgana then 'Remove Percival and Morgana' else 'Remove Percival')
+        else
+            ans.push('Add Percival')
+
+        if @avalonOptions.useMorgana
+            ans.push('Remove Morgana')
+        else
+            ans.push(if @avalonOptions.usePercival then 'Add Morgana' else 'Add Percival and Morgana')
+            
+        ans.push(if @avalonOptions.useOberon then 'Remove Oberon' else 'Add Oberon')
+        ans.push(if @avalonOptions.useMordred then 'Remove Mordred' else 'Add Mordred')
+
+        if @avalonOptions.useMordred
+            ans.push(if @avalonOptions.combineMordredAndAssassin then 'Separate Mordred and Assassin' else 'Combine Mordred and Assassin')
+        
+        return ans
+
+    setAvalonOption: (choice) ->
+        switch choice
+            when 'Add Percival'
+                @avalonOptions.usePercival = true
+            when 'Add Morgana', 'Add Percival and Morgana'
+                @avalonOptions.usePercival = true
+                @avalonOptions.useMorgana = true
+            when 'Add Oberon'
+                @avalonOptions.useOberon = true
+            when 'Add Mordred'
+                @avalonOptions.useMordred = true
+            when 'Remove Percival', 'Remove Percival and Morgana'
+                @avalonOptions.usePercival = false
+                @avalonOptions.useMorgana = false
+            when 'Remove Morgana'
+                @avalonOptions.useMorgana = false
+            when 'Remove Oberon'
+                @avalonOptions.useOberon = false
+            when 'Remove Mordred'
+                @avalonOptions.useMordred = false
+            when 'Combine Mordred and Assassin'
+                @avalonOptions.combineMordredAndAssassin = true
+            when 'Separate Mordred and Assassin'
+                @avalonOptions.combineMordredAndAssassin = false
+
+    getAvalonRoles: ->
+        roles = ['Merlin']
+        roles.push('Percival') if @avalonOptions.usePercival
+        roles.push('Morgana') if @avalonOptions.useMorgana
+        roles.push('Oberon') if @avalonOptions.useOberon
+        if not @avalonOptions.useMordred
+            roles.push('Assassin')
+        else if @avalonOptions.combineMordredAndAssassin
+            roles.push('Mordred/Assassin')
+        else
+            roles.push('Mordred')
+            roles.push('Assassin')
+        return roles
+
+    getAvalonRolesString: ->
+        return "with #{@nameList @getAvalonRoles()}" if @gameType is AVALON_GAMETYPE
+        return ''
+        
+    getRequiredPlayers: ->
+        return 5 if @gameType isnt AVALON_GAMETYPE
+        badGuys = @getAvalonRoles().length - (if @avalonOptions.usePercival then 2 else 1)
+        return [5, 5, 5, 7, 10][badGuys]

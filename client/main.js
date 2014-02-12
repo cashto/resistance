@@ -444,9 +444,12 @@ var drawMsgArea = function() {
                 html += "<button class='btn btn-danger' onclick='onDismissChoose([])'>Cancel</a> ";
             }
         } else if (choice.cmd === 'choose') {
-            html = "<button class='btn btn-success' onclick='onDismissChoose(\"" + choice.choices[0] + "\")'>" + choice.choices[0] + "</button> ";
+            html = generateButton('btn-success', choice.choices[0]);
             if (choice.choices.length > 1) {
-                html += "<button class='btn btn-danger'  onclick='onDismissChoose(\"" + choice.choices[1] + "\")'>" + choice.choices[1] + "</button> ";
+                html += generateButton('btn-danger', choice.choices[1]);
+            }
+            if (choice.choices.length > 2) {
+                html = generateButton('', choice.choices[2]) + html;
             }
         }
         
@@ -461,6 +464,20 @@ var drawMsgArea = function() {
     {
         $('#msg-text').html(xmlEscape(g.status));
         $('#msg-buttons').html("<button class='btn invisible'>.</button>");
+    }
+}
+
+var generateButton = function(btnClass, choice) {
+    if (typeof(choice) === 'string') {
+        return "<button class='btn " + btnClass + "' onclick='onDismissChoose(\"" + choice + "\")'>" + choice + "</button> ";
+    } else {
+        return "<div class='btn-group'>" +
+            "<a class='btn dropdown-toggle' data-toggle='dropdown' href='#'>" + choice[0] + " <span class='caret'></span></a>" +
+            "<ul class='dropdown-menu'>" +
+            choice.slice(1).map(function (i) { 
+                return  "<li><a onclick='onDismissChoose(\"" + i + "\")'>" + i + "</a></li>";
+            }).join('') +
+            "</ul></div> ";
     }
 }
 

@@ -711,14 +711,31 @@ class Game extends Room
         p.send('status', {msg:msg}) for p in @players
 
     getInitialState: ->
-        spies = []
+        state = 
+            spies: []
+            leader: Math.floor(Math.random() * @activePlayers.length)
+            
+        resistanceRoles = ['Resistance', 'Merlin', 'Percival']
         spiesRequired = Math.floor((@activePlayers.length - 1) / 3) + 1
-        for i in [0 ... @activePlayers.length]
-            if Math.random() < spiesRequired / (@activePlayers.length - i)
-                spies.push @activePlayers[i]
-                --spiesRequired
 
-        initialOriginalState = =>
+        roles = (if @gameType is AVALON_GAMETYPE then @getAvalonRoles() else [])
+        for i in [roles.filter((i) -> i not in resistanceRoles).length ... spiesRequired]
+            roles.push('Spy')
+        for i in [roles.length ... @activePlayers.length]
+            roles.push('Resistance')
+        roles.shuffle()
+        
+        for role, i in roles
+            @activePlayers[i].role = role
+            spies.push(@activePlayers[i]) if role not in resistanceRoles
+            state.merlin = @activePlayers[i].id if role is 'Merlin'
+            state.assassin = @activePlayers[i].id if role in ['Assassin', 'Mordred/Assassin']
+            state.percival = @activePlayers[i].id if role is 'Percival'
+            state.morgana = @activePlayers[i].id if role is 'Morgana'
+            state.oberon = @activePlayers[i].id if role is 'Oberon'
+            state.mordred = @activePlayers[i].id if role is 'Mordred'
+                
+        if @gameType is ORIGINAL_GAMETYPE
             deck = [
                 "KeepingCloseEye"
                 "KeepingCloseEye"
@@ -728,6 +745,7 @@ class Game extends Room
                 "StrongLeader"
                 "StrongLeader"
             ]
+            
             if @activePlayers.length > 6
                 deck = deck.concat [
                     "NoConfidence"
@@ -739,12 +757,11 @@ class Game extends Room
                     "InTheSpotlight"
                     "EstablishConfidence"
                 ]
-            deck.shuffle()        
-            return {
-                spies: spies
-                deck: deck
-                leader: Math.floor(Math.random() * @activePlayers.length)
-            }
+                
+            deck.shuffle()
+            state.deck = deck
+        
+        return state
                 
         initialAvalonState = =>
             resistance = @everyoneExcept spies

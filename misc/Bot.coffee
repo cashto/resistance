@@ -48,7 +48,7 @@ class Bot
         @sendAjax verb:'GET', cb: @pollLoop
         
     start: ->
-        @sendAjax body: { username:@name, password:'password' }, url: '/server/login', cb: @afterLogin
+        @sendAjax body: { username:@name, password:process.env.RESISTANCE_BOT_PASSWORD }, url: '/server/login', cb: @afterLogin
 
     afterLogin: (res, data) ->
         @sessionKey  = /(sessionKey=\w*)/.exec res.headers['set-cookie']
@@ -74,7 +74,12 @@ class Bot
             return setTimeout (=> @gameLoop()), 1000
         question = rand @questions
         switch question.cmd
-            when 'choose' then choice = rand question.choices.filter((q) => (q isnt 'Fail' or @players.amSpy) and q isnt 'Remove player')
+            when 'choose' 
+                validChoices = question.choices.filter((q) => 
+                    (q isnt 'Fail' or @players.amSpy) and 
+                    q isnt 'Remove player' and 
+                    typeof(q) is 'string')
+                choice = rand validChoices
             when 'choosePlayers'
                 choice = []
                 while choice.length < question.n

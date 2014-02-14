@@ -19,6 +19,11 @@ defineMethod Array, 'shuffle', ->
 ORIGINAL_GAMETYPE = 1
 AVALON_GAMETYPE = 2
 BASIC_GAMETYPE = 3
+
+# not really a gametype, but stored in the DB to distinguish Avalon games 
+# roles besides Merlin and Assassin.
+AVALON_PLUS_GAMETYPE = 4 
+
 allGameTypes = [ORIGINAL_GAMETYPE, AVALON_GAMETYPE, BASIC_GAMETYPE]
 
 xmlEscape = (s) ->

@@ -225,8 +225,13 @@ class Game extends Room
         @spies = state.spies
         @leader = state.leader
         @deck = state.deck
-        @merlin = @findPlayer(state.merlin) if state.merlin?
-        @assassin = @findPlayer(state.assassin) if state.assassin?
+        @merlin = state.merlin
+        @assassin = state.assassin
+        @percival = state.percival
+        @morgana = state.morgana
+        @oberon = state.oberon
+        @mordred = state.mordred
+        
         @gameStarted = true
         @onPlayersChanged()
         @missionTeamSizes = [
@@ -246,10 +251,10 @@ class Game extends Room
             
         for p in @activePlayers
             startMsg = (if p in @spies then "You are a SPY!" else "You are RESISTANCE! There are #{@spies.length} spies in this game.")
-            if p is @assassin
-                startMsg = "You are the assassin. " + startMsg
-            if p is @merlin
-                startMsg = "You are Merlin. " + startMsg 
+            if p.id in [@merlin, @percival, @morgana, @oberon, @mordred]
+                startMsg = "You are #{p.role}. " + startMsg
+            else if p.id is @assassin
+                startMsg = "You are the assassin. " + startMsg 
             p.sendMsg startMsg
                 
         dbState = 
@@ -257,7 +262,11 @@ class Game extends Room
             leader: @leader
             merlin: state.merlin
             assassin:state.assassin
-        @db.createGame JSON.stringify(dbState), @gameType, @activePlayers, @spies,
+            
+        gameType = @gameType
+        gameType = AVALON_PLUS_GAMETYPE if @percival or @morgana or @oberon or @mordred
+        
+        @db.createGame JSON.stringify(dbState), gameType, @activePlayers, @spies,
             (err, result) => 
                 @dbId = result
                 @nextRound()
@@ -376,6 +385,7 @@ class Game extends Room
                 doneCb()
 
     askLeaderForTeam: ->
+        @activePlayers[@leader].send '-vote'
         @ask 'choosing the mission team ...',
             @makeQuestions [@activePlayers[@leader]],
                 cmd: 'choosePlayers'
@@ -537,7 +547,6 @@ class Game extends Room
         @score.push success
         @sendAll 'scoreboard', @getScoreboard()
         if (score for score in @score when not score).length is 3
-            @sendAllMsg("#{@merlin} was Merlin.") if @merlin?
             return @spiesWin()
         return @askToAssassinateMerlin() if (score for score in @score when score).length is 3
         @round = 1
@@ -546,19 +555,20 @@ class Game extends Room
 
     askToAssassinateMerlin: ->
         return @resistanceWins() if @gameType isnt AVALON_GAMETYPE
+        assassin = @findPlayer(@assassin)
         @ask 'choosing a player to assassinate ...',
-            @makeQuestions [@assassin],
+            @makeQuestions [assassin],
                 cmd: 'choosePlayers'
                 msg: 'Choose a player to assassinate.'
                 n: 1
                 players: @getIds @everyoneExcept @spies
                 (response, doneCb) =>
-                    @sendAllMsgAndGameLog "#{@assassin} chose to assassinate #{response.choice[0]}."
-                    if response.choice[0] is @merlin
-                        @sendAllMsgAndGameLog "#{@assassin} guessed RIGHT. #{response.choice[0]} was Merlin!"
+                    @sendAllMsgAndGameLog "#{assassin} chose to assassinate #{response.choice[0]}."
+                    if response.choice[0].id is @merlin
+                        @sendAllMsgAndGameLog "#{assassin} guessed RIGHT. #{response.choice[0]} was Merlin!"
                         @spiesWin()
                     else
-                        @sendAllMsgAndGameLog "#{@assassin} guessed WRONG. #{@merlin} was Merlin, not #{response.choice[0]}!"
+                        @sendAllMsgAndGameLog "#{assassin} guessed WRONG. #{@findPlayer(@merlin)} was Merlin, not #{response.choice[0]}!"
                         @resistanceWins()
                     doneCb()
         
@@ -571,6 +581,7 @@ class Game extends Room
     gameOver: (spiesWin) ->
         @gameFinished = true
         @sendAll 'gameover'
+        @sendAll '-vote'
         @sendPlayers(p) for p in @players
         @setStatus (if spiesWin then 'The spies win!' else 'The resistance wins!')
         @lobby.onGameUpdate(this)
@@ -643,16 +654,31 @@ class Game extends Room
         @sendPlayers(p) for p in @players
         @askToStartGame()
             
-    sendPlayers: (player) ->
-        amSpy = @spies.some (i) -> i.id is player.id
-        amMerlin = @merlin? and @merlin.id is player.id
-        response = (for p in @activePlayers 
-            {
-                isSpy: (amSpy or amMerlin or @gameFinished) and p in @spies
-                id: p.id
-                name: p.name
-            })
-        player.send 'players', { players:response, amSpy:amSpy }
+    sendPlayers: (me) ->
+        isSpy = (player) => 
+            @spies.some((i) -> i.id is player.id)
+
+        response =
+            for them in @activePlayers 
+                iKnowTheyAreASpy =
+                    me.id is them.id or
+                    (isSpy(me) and me.id isnt @oberon and them.id isnt @oberon) or
+                    (me.id is @merlin and them.id isnt @mordred)
+                   
+                {
+                    isSpy: isSpy(them) and (@gameFinished or iKnowTheyAreASpy)
+                    id: them.id
+                    name: them.name
+                    role:
+                        if @gameFinished or me.id is them.id
+                            them.role
+                        else if me.id is @percival and (them.id is @merlin or them.id is @morgana)
+                            if @morgana? then "Merlin?" else "Merlin"
+                        else
+                            undefined
+                }
+      
+        me.send 'players', { players:response, amSpy:isSpy(me) }
                 
     askOne: (player, cmd, cb) ->
         question = JSON.parse(JSON.stringify(cmd))
@@ -708,7 +734,7 @@ class Game extends Room
             
     setStatus: (msg) ->
         @status = msg
-        p.send('status', {msg:msg}) for p in @players
+        p.send('status', {msg:msg}) for p in @players  
 
     getInitialState: ->
         state = 
@@ -727,13 +753,13 @@ class Game extends Room
         
         for role, i in roles
             @activePlayers[i].role = role
-            spies.push(@activePlayers[i]) if role not in resistanceRoles
+            state.spies.push(@activePlayers[i]) if role not in resistanceRoles
             state.merlin = @activePlayers[i].id if role is 'Merlin'
             state.assassin = @activePlayers[i].id if role in ['Assassin', 'Mordred/Assassin']
             state.percival = @activePlayers[i].id if role is 'Percival'
             state.morgana = @activePlayers[i].id if role is 'Morgana'
             state.oberon = @activePlayers[i].id if role is 'Oberon'
-            state.mordred = @activePlayers[i].id if role is 'Mordred'
+            state.mordred = @activePlayers[i].id if role is ['Mordred', 'Mordred/Assassin']
                 
         if @gameType is ORIGINAL_GAMETYPE
             deck = [
@@ -762,25 +788,6 @@ class Game extends Room
             state.deck = deck
         
         return state
-                
-        initialAvalonState = =>
-            resistance = @everyoneExcept spies
-            return {
-                merlin: resistance[Math.floor(Math.random() * resistance.length)].id
-                assassin: spies[Math.floor(Math.random() * spies.length)].id
-                spies: spies
-                leader: Math.floor(Math.random() * @activePlayers.length)
-            }
-            
-        initialBasicState = =>
-            return {
-                spies: spies
-                leader: Math.floor(Math.random() * @activePlayers.length)
-            }
-
-        return initialOriginalState() if @gameType is ORIGINAL_GAMETYPE
-        return initialAvalonState() if @gameType is AVALON_GAMETYPE
-        return initialBasicState() if @gameType is BASIC_GAMETYPE
         
     getScoreboard: ->
         return {

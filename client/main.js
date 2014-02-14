@@ -162,7 +162,12 @@ var onAllChat = function(data) {
 
 var onStatus = function(data) {
     g.status = data.msg;
-    drawMsgArea();
+    
+    // Don't refresh the msg area if choices are up ... we may 
+    // accidentally close a dropdown if we do.
+    if (g.choices.length === 0) {
+        drawMsgArea();
+    }
 }
 
 var onMsg = function(data) {
@@ -549,10 +554,20 @@ var drawPlayers = function(data) {
         var hammerTooltip = "<div class=normal-word-break>" + name + " is the hammer.</div>";
         var hammerIcon = "<span class=hammer><i class=icon-star-empty data-html=true title=\"" + xmlEscape(hammerTooltip) + "\"></i></span>";
         
+        var labelColor = "";
+        var labelText = g.players[i].role || "";
+        if (labelText === "Resistance" || labelText === "Spy") {
+            labelText = "";
+        }
+        if (g.votes[id] != null) {
+            labelText = g.votes[id];
+            labelColor = (g.votes[id] === 'Approve' ? 'label-success' : 'label-important');
+        }
+        
         html += "<div id=player" + id + " class='usertile" + (g.highlights[id] ? ' highlight' : '') + "'>" +
                 "<img src=" + (g.players[i].isSpy ? 'spy' : 'resistance') + ".png>" +                
                 "<br>" + (cards.length !== 0 ? cardsIcon : '') + ' ' + name + ' ' + (isOpinionMaker ? opinionMakerIcon : '') + (hammer === id ? hammerIcon : '') +
-                "<br><span class='label " + (g.votes[id] === 'Approve' ? 'label-success' : 'label-important') + "'>" + (g.votes[id] || '') + "</span>&nbsp;" +
+                "<br><span class='label " + labelColor + "'>" + labelText + "</span>&nbsp;" +
                 "</div>";
     }
     

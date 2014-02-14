@@ -57,6 +57,7 @@ class Game extends Room
         for p in @activePlayers when p.id is player.id
             p.__proto__ = player
         @onRefresh(player)
+        @onChat null, { msg: "#{player} has entered the game." }
         if @players.length is 1 then @addActivePlayer(player) else @askToJoinGame(player)
         
     onRefresh: (player) ->
@@ -76,6 +77,7 @@ class Game extends Room
         super
 
         @cancelQuestions([player]) if not @gameStarted
+        @onChat null, { msg: "#{player} has left the game." }
                          
         if player.id in @activePlayers.map((p)->p.id)
             if not @gameStarted
@@ -104,7 +106,11 @@ class Game extends Room
         
     onChat: (player, request) ->
         for p in @players
-            p.send 'chat', { player:player.name, msg:request.msg }
+            cmd =
+                player: (if player? then player.name else 'server')
+                msg: request.msg
+            cmd.serverMsg = true if not player?
+            p.send 'chat', cmd
             
     onAllChat: (player, request) ->
         @lobby.onAllChat(player, request)
@@ -590,6 +596,7 @@ class Game extends Room
         @sendPlayers(p) for p in @players
         @setStatus (if spiesWin then 'The spies win!' else 'The resistance wins!')
         @lobby.onGameUpdate(this)
+        @lobby.sendAllChat null, "Game ##{@id} finished: the #{if spiesWin then 'spies' else 'resistance'} won!"
         @db.finishGame @dbId, spiesWin, ->
 
 #-----------------------------------------------------------------------------    

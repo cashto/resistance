@@ -12,12 +12,12 @@ class Lobby extends Room
         @onRefresh(player)
         
     onPlayerLogin: (player) ->
-        @sendAllChat 'server', "#{player} has joined."
+        @sendAllChat null, "#{player} has joined."
         for p in @players
             p.send '+player', { id: player.id, name: player.name }
         
     onPlayerLogout: (player) ->
-        @sendAllChat 'server', "#{player} has left."
+        @sendAllChat null, "#{player} has left."
         for p in @players
             p.send '-player', { id: player.id }
         
@@ -43,7 +43,11 @@ class Lobby extends Room
         
     sendAllChat: (playerName, msg) ->
         for id, p of g.playersById
-            p.send 'allChat', { player:playerName, msg:msg }
+            cmd = 
+                player: playerName or 'server'
+                msg: msg
+            cmd.serverMsg = true if not playerName?
+            p.send 'allChat', cmd
             
     onJoin: (player, request) ->
         gameId = request.id
@@ -51,6 +55,7 @@ class Lobby extends Room
             throw 'Invalid gametype' if request.gameType not in allGameTypes
             gameId = @nextId++
             @games[gameId] = new Game(gameId, request.gameType, this, g.db)
+            @sendAllChat null, "#{player} has created game ##{gameId}."
             @onGameUpdate(@games[gameId])
         
         room = @games[gameId]

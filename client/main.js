@@ -671,8 +671,9 @@ var xmlEscape = function(s) {
 var updateChat = function(selector, data) {
     selector.html(selector.html() + 
         "<code>[" + new Date().toTimeString().substring(0, 5) + "]</code> " +
+        "<span style='" + (data.serverMsg ? "color: teal" : "") + "'>" +
         "<b>" + xmlEscape(data.player) + "</b>: " + 
-        xmlEscape(data.msg) + "<br>");
+        xmlEscape(data.msg) + "</span><br>");
     selector.prop({scrollTop: selector.prop('scrollHeight')});
 }
 

@@ -487,7 +487,12 @@ class Game extends Room
                 cmd: 'choose'
                 msg: 'Do you want the mission to succeed or fail?'
                 choices: ['Succeed', 'Fail']
-                (response, doneCb) => context.votes.push(response); doneCb()
+                (response, doneCb) => 
+                    if response.player not in @spies and response.choice is 'Fail'
+                        response.player.sendMsg "You are not a spy! Your vote has been changed to 'Succeed', since clearly that's what you meant to choose."
+                        response.choice = 'Succeed'
+                    context.votes.push(response)
+                    doneCb()
             =>
                 for response in context.votes when context.spotlight is response.player
                     @sendAllMsgAndGameLog "#{context.spotlight} voted for #{if response.choice is 'Succeed' then 'SUCCESS' else 'FAILURE'}."

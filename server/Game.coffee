@@ -495,7 +495,7 @@ class Game extends Room
                 choices: ['Succeed', 'Fail']
                 (response, doneCb) => 
                     if response.player not in @spies and response.choice is 'Fail'
-                        response.player.sendMsg "You are not a spy! Your vote has been changed to 'Succeed', since clearly that's what you meant to choose."
+                        response.player.sendMsg "You are not a spy! Your vote has been changed to 'Succeed', since surely that's what you meant to do."
                         response.choice = 'Succeed'
                     context.votes.push(response)
                     doneCb()

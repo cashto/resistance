@@ -228,15 +228,8 @@ class Game extends Room
         @activePlayers.shuffle()
         state = @getInitialState()
 
-        @spies = state.spies
-        @leader = state.leader
-        @deck = state.deck
-        @merlin = state.merlin
-        @assassin = state.assassin
-        @percival = state.percival
-        @morgana = state.morgana
-        @oberon = state.oberon
-        @mordred = state.mordred
+        for own key, value of state
+            this[key] = value
         
         @gameStarted = true
         @onPlayersChanged()
@@ -254,25 +247,26 @@ class Game extends Room
             [1, 1, 1, 2, 1],
             [1, 1, 1, 2, 1],
             [1, 1, 1, 2, 1]][@activePlayers.length - 5]
-            
+        
+        whoIsInTheGame = "#{@nameList @getAvalonRoles()} are in this game."
+        @gameLog whoIsInTheGame
         for p in @activePlayers
-            startMsg = (if p in @spies then "You are a SPY!" else "You are RESISTANCE! There are #{@spies.length} spies in this game.")
-            if p.id in [@merlin, @percival, @morgana, @oberon, @mordred]
-                startMsg = "You are #{p.role}. " + startMsg
-            else if p.id is @assassin
-                startMsg = "You are the assassin. " + startMsg 
-            p.sendMsg startMsg
+            roleMsg = 
+                if p.id in [@merlin, @percival, @morgana, @oberon, @mordred]
+                    "You are #{p.role}. "
+                else if p.id is @assassin
+                    "You are the assassin. "
+                else
+                    ""
+
+            p.sendMsg "#{roleMsg}You are #{if p in @spies then 'a SPY' else 'RESISTANCE!'}! There are #{@spies.length} spies in this game."
+            p.sendMsg whoIsInTheGame if @gameType is AVALON_GAMETYPE
                 
-        dbState = 
-            deck: @deck
-            leader: @leader
-            merlin: state.merlin
-            assassin:state.assassin
-            
+        delete state.spies
         gameType = @gameType
         gameType = AVALON_PLUS_GAMETYPE if @percival or @morgana or @oberon or @mordred
         
-        @db.createGame JSON.stringify(dbState), gameType, @activePlayers, @spies,
+        @db.createGame JSON.stringify(state), gameType, @activePlayers, @spies,
             (err, result) => 
                 @dbId = result
                 @nextRound()
@@ -771,7 +765,7 @@ class Game extends Room
             state.percival = @activePlayers[i].id if role is 'Percival'
             state.morgana = @activePlayers[i].id if role is 'Morgana'
             state.oberon = @activePlayers[i].id if role is 'Oberon'
-            state.mordred = @activePlayers[i].id if role is ['Mordred', 'Mordred/Assassin']
+            state.mordred = @activePlayers[i].id if role in ['Mordred', 'Mordred/Assassin']
                 
         if @gameType is ORIGINAL_GAMETYPE
             deck = [

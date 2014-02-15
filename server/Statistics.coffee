@@ -89,6 +89,7 @@ class Statistics
             1: "Original"
             2: "Avalon"
             3: "Basic"
+            4: "Avalon+"
             
         for i in [0 ... 25]
             game = tables.games[tables.games.length - i - 1]
@@ -104,11 +105,11 @@ class Statistics
         return html
         
     getWinRates: (tables) ->
-        html = "<table class='table table-striped table-condensed'><tr><th>Players</th> <th>Original</th> <th>Avalon</th> <th>Basic</th></tr>"
+        html = "<table class='table table-striped table-condensed'><tr><th>Players</th> <th>Basic</th> <th>Original</th> <th>Avalon</th> <th>Avalon+</th></tr>"
         
         for n in [5 .. 10]
             html += "<tr><td>#{n}</td>"
-            for type in [1 .. 3]
+            for type in [3, 1, 2, 4]
                 games = tables.games.filter((i) -> i.spies.length + i.resistance.length is n and i.gameType is type)
                 html += "<td>#{@frac(games.filter((i) -> i.spiesWin).length, games.length)}</td> "
             html += "</tr>"

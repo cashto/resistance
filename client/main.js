@@ -10,7 +10,8 @@ var cardNames = {
     EstablishConfidence: 'Establish Confidence',
     Overheard: 'Overheard',
     TakeResponsibility: 'Take Responsibility',
-    OpinionMaker: 'Opinion Maker'
+    OpinionMaker: 'Opinion Maker',
+    LadyOfTheLake: 'Lady of the Lake'
 };
 
 var g;

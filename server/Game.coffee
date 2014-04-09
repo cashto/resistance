@@ -32,6 +32,7 @@ class Game extends Room
             OpenUp: 'OPEN UP'
             TakeResponsibility: 'TAKE RESPONSIBILITY'
             OpinionMaker: 'OPINION MAKER'
+            LadyOfTheLake: 'LADY OF THE LAKE'
         @removedPlayerIds = []
         @votelog =
             rounds: [0, 0, 0, 0, 0]
@@ -45,7 +46,9 @@ class Game extends Room
             useMordred: false
             useOberon: false
             combineMordredAndAssassin: false
-    
+            useLadyOfTheLake: false
+        @ineligibleLadyOfTheLakeRecipients = []
+        
     onRequest: (player, request) ->
         if @dbId? and request.cmd not in ['chat', 'allChat']
             @db.updateGame @dbId, ++@nextId, player.id, JSON.stringify(request), (err) ->
@@ -191,7 +194,7 @@ class Game extends Room
             choices.push(@getAvalonOptions()) if @gameType is AVALON_GAMETYPE
             @askOne gameController,
                 cmd: 'choose'
-                msg: "Press OK to start game #{@getAvalonRolesString()}."
+                msg: "Press OK to start game with #{@getAvalonRolesString()}."
                 choices: choices
                 (response) =>
                     switch response.choice
@@ -248,8 +251,8 @@ class Game extends Room
             [1, 1, 1, 2, 1],
             [1, 1, 1, 2, 1]][@activePlayers.length - 5]
         
-        whoIsInTheGame = "#{@nameList @getAvalonRoles()} are in this game."
-        @gameLog whoIsInTheGame
+        whoIsInTheGame = "#{@getAvalonRolesString()} are in this game."
+        @gameLog whoIsInTheGame if @gameType is AVALON_GAMETYPE
         for p in @activePlayers
             roleMsg = 
                 if p.id in [@merlin, @percival, @morgana, @oberon, @mordred]
@@ -264,8 +267,13 @@ class Game extends Room
                 
         delete state.spies
         gameType = @gameType
-        gameType = AVALON_PLUS_GAMETYPE if @percival or @morgana or @oberon or @mordred
+        gameType = AVALON_PLUS_GAMETYPE if @percival or @morgana or @oberon or @mordred or @ladyOfTheLake
         
+        if @ladyOfTheLake
+            ladyOfTheLake = @findPlayer(@ladyOfTheLake)
+            @addCard ladyOfTheLake, 'LadyOfTheLake'
+            @ineligibleLadyOfTheLakeRecipients.push(ladyOfTheLake)
+            
         @db.createGame JSON.stringify(state), gameType, @activePlayers, @spies,
             (err, result) => 
                 @dbId = result
@@ -280,6 +288,25 @@ class Game extends Room
         @setGuns []
         @gameLog "#{@activePlayers[@leader]} is the mission leader."
         
+        return @askToPlayStrongLeader() if @round isnt 1 or @mission < 3
+        
+        @ask 'deciding who to give LADY OF THE LAKE to.',
+            @makeQuestions @whoeverHas('LadyOfTheLake'),
+                cmd: 'choosePlayers'
+                msg: 'Choose a player to give LADY OF THE LAKE to.'
+                n: 1,
+                players: @getIds @everyoneExcept @ineligibleLadyOfTheLakeRecipients
+                (response, doneCb) =>
+                    target = response.choice[0]
+                    response.player.sendMsg "#{target} is #{if target in @spies then 'a SPY' else 'RESISTANCE'}!"
+                    @sendAllMsgAndGameLog "#{response.player} gave LADY OF THE LAKE to #{target}.", [response.player]
+                    @subCard response.player, 'LadyOfTheLake'
+                    @addCard target, 'LadyOfTheLake'
+                    @ineligibleLadyOfTheLakeRecipients.push(target)
+                    doneCb()
+            => @askToPlayStrongLeader()
+            
+    askToPlayStrongLeader: ->
         @ask 'deciding whether they want to use STRONG LEADER ...',
             @makeQuestions @everyoneExcept([@activePlayers[@leader]], @whoeverHas('StrongLeader')),
                 cmd: 'choose'
@@ -566,7 +593,7 @@ class Game extends Room
                 cmd: 'choosePlayers'
                 msg: 'Choose a player to assassinate.'
                 n: 1
-                players: @getIds @everyoneExcept @spies
+                players: @getIds @activePlayers.filter((player) => player.id is @oberon or player not in @spies)
                 (response, doneCb) =>
                     @sendAllMsgAndGameLog "#{assassin} chose to assassinate #{response.choice[0]}."
                     if response.choice[0].id is @merlin
@@ -766,7 +793,10 @@ class Game extends Room
             state.morgana = @activePlayers[i].id if role is 'Morgana'
             state.oberon = @activePlayers[i].id if role is 'Oberon'
             state.mordred = @activePlayers[i].id if role in ['Mordred', 'Mordred/Assassin']
-                
+            
+        if @avalonOptions.useLadyOfTheLake
+            state.ladyOfTheLake = @activePlayers[state.leader].id
+                    
         if @gameType is ORIGINAL_GAMETYPE
             deck = [
                 "KeepingCloseEye"
@@ -811,6 +841,9 @@ class Game extends Room
     getAvalonOptions: ->
         ans = ['Options']
         
+        addRemove = (flag, role) ->
+            ans.push((if flag then 'Remove ' else 'Add ') + role)
+        
         if @avalonOptions.usePercival
             ans.push(if @avalonOptions.useMorgana then 'Remove Percival and Morgana' else 'Remove Percival')
         else
@@ -821,12 +854,13 @@ class Game extends Room
         else
             ans.push(if @avalonOptions.usePercival then 'Add Morgana' else 'Add Percival and Morgana')
             
-        ans.push(if @avalonOptions.useOberon then 'Remove Oberon' else 'Add Oberon')
-        ans.push(if @avalonOptions.useMordred then 'Remove Mordred' else 'Add Mordred')
+        addRemove @avalonOptions.useOberon, 'Oberon'
+        addRemove @avalonOptions.useMordred, 'Mordred'
 
         if @avalonOptions.useMordred
             ans.push(if @avalonOptions.combineMordredAndAssassin then 'Separate Mordred and Assassin' else 'Combine Mordred and Assassin')
         
+        addRemove @avalonOptions.useLadyOfTheLake, 'Lady of the Lake'
         return ans
 
     setAvalonOption: (choice) ->
@@ -840,6 +874,8 @@ class Game extends Room
                 @avalonOptions.useOberon = true
             when 'Add Mordred'
                 @avalonOptions.useMordred = true
+            when 'Add Lady of the Lake'
+                @avalonOptions.useLadyOfTheLake = true
             when 'Remove Percival', 'Remove Percival and Morgana'
                 @avalonOptions.usePercival = false
                 @avalonOptions.useMorgana = false
@@ -849,6 +885,8 @@ class Game extends Room
                 @avalonOptions.useOberon = false
             when 'Remove Mordred'
                 @avalonOptions.useMordred = false
+            when 'Remove Lady of the Lake'
+                @avalonOptions.useLadyOfTheLake = false
             when 'Combine Mordred and Assassin'
                 @avalonOptions.combineMordredAndAssassin = true
             when 'Separate Mordred and Assassin'
@@ -869,8 +907,10 @@ class Game extends Room
         return roles
 
     getAvalonRolesString: ->
-        return "with #{@nameList @getAvalonRoles()}" if @gameType is AVALON_GAMETYPE
-        return ''
+        return '' if @gameType isnt AVALON_GAMETYPE
+        roles = @getAvalonRoles()
+        roles.push('Lady of the Lake') if @avalonOptions.useLadyOfTheLake
+        return @nameList(roles)
         
     getRequiredPlayers: ->
         return 5 if @gameType isnt AVALON_GAMETYPE

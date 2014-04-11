@@ -194,7 +194,7 @@ class Game extends Room
             choices.push(@getAvalonOptions()) if @gameType is AVALON_GAMETYPE
             @askOne gameController,
                 cmd: 'choose'
-                msg: "Press OK to start game with #{@getAvalonRolesString()}."
+                msg: "Press OK to start game#{if @gameType is AVALON_GAMETYPE then ' with ' + @getAvalonRolesString() else ''}."
                 choices: choices
                 (response) =>
                     switch response.choice

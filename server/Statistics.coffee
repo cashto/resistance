@@ -17,7 +17,7 @@ class Statistics
                 recentgames: @getRecentGames(tables)
                 winrates: @getWinRates(tables)
                 activity: @getActivity(tables)
-    
+            
     joinTables: (tables) ->
         oneMonthAgo = Date.now() - 30 * 24 * 3600 * 1000
 
@@ -118,24 +118,30 @@ class Statistics
         return html
         
     getActivity: (tables) ->
-        hist = {}
-        millisInWeek = 1000 * 3600 * 24 * 7
-        for game in tables.games
-            week = Math.floor(game.startTime.getTime() / millisInWeek)
-            if not hist[week]?
-                hist[week] =
-                    games: 0
-                    players: {}
-            ++hist[week].games
-            for player in game.spies
-                hist[week].players[player.id] = true
-            for player in game.resistance
-                hist[week].players[player.id] = true
-                
-        rows = for week in Object.keys(hist).sort((a,b) -> a - b)[...-1]
-            "[new Date(#{week * millisInWeek}), #{hist[week].games}, #{Object.keys(hist[week].players).length}],\n"
+        millisInHour = 60 * 60 * 1000
+        millisInDay = 24 * millisInHour
+        millisInWeek = 7 * millisInDay
         
-        html = "<script>drawChart([['Date', 'Games', 'Players'], #{rows.join('')}]);</script>"
+        startDays = tables.games.map (i) -> Math.floor(i.startTime.getTime() / millisInDay)
+        minDay = Math.min.apply null, startDays
+        maxDay = Math.max.apply null, startDays
+        
+        rows =
+            for startDay in [minDay .. maxDay - 7]
+                startTime = startDay * millisInDay
+                games = 0
+                players = {}
+                playerHours = 0
+                for game in tables.games when game.startTime.getTime() >= startTime and game.startTime.getTime() < startTime + millisInWeek
+                    ++games
+                    for player in game.spies
+                        players[player.id] = true
+                    for player in game.resistance
+                        players[player.id] = true
+                    playerHours += (game.spies.length + game.resistance.length) * (game.endTime.getTime() - game.startTime.getTime()) / millisInHour 
+                "[ new Date(#{startTime + millisInWeek}), #{games}, #{playerHours.toFixed(1)}, #{Object.keys(players).length} ],\n"
+        
+        html = "<script>drawChart([['Date', 'Weekly Games', 'Player Hours', 'Unique Players'], #{rows.join('')}]);</script>"
         return html
         
     frac: (n, d) ->

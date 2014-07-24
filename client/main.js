@@ -670,11 +670,21 @@ var xmlEscape = function(s) {
 }
 
 var updateChat = function(selector, data) {
-    selector.html(selector.html() + 
+    var currentDiv = selector.children(".current");
+    var lines = (currentDiv.data("lines") || 0) + 1;
+    currentDiv.append(
         "<code>[" + new Date().toTimeString().substring(0, 5) + "]</code> " +
         "<span style='" + (data.serverMsg ? "color: teal" : "") + "'>" +
         "<b>" + xmlEscape(data.player) + "</b>: " + 
         xmlEscape(data.msg) + "</span><br>");
+    currentDiv.data("lines", lines);
+    
+    if (lines >= 10) {
+        var innerHtml = currentDiv.html();
+        currentDiv.remove();
+        selector.append("<div>" + innerHtml + "</div><div class='current'></div>");
+    }
+
     selector.prop({scrollTop: selector.prop('scrollHeight')});
 }
 

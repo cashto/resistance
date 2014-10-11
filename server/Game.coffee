@@ -108,6 +108,7 @@ class Game extends Room
 #-----------------------------------------------------------------------------
         
     onChat: (player, request) ->
+        return if @gameStarted and not @gameFinished and player? and player.id not in @activePlayers.map((p)->p.id)
         for p in @players
             cmd =
                 player: (if player? then player.name else 'server')

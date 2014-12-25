@@ -59,7 +59,8 @@ var onLeaveGame = function() {
 var onEnter = function(cmd) {
     return function(event) {
         if (event.keyCode === 13) {
-            if (event.target.value != '') {
+            //Check that the message is not 0 or more whitespace characters.
+            if (!(/^\s*$/.test(event.target.value))) {
                 sendAjax({ cmd:cmd, msg:event.target.value });
                 event.target.value = '';
             }

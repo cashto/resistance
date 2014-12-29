@@ -73,6 +73,8 @@ app.post '/server/register', (req, res) ->
     isEmpty = (x) -> not x? or x is ''
     
     return res.send(400, 'Invalid username') if isEmpty req.body.username
+    return res.send(400, 'Invalid character in username') if !req.body.username.split('').every((i) ->  32 <= i.charCodeAt(0) < 127)
+    return res.send(400, 'Invalid username') if req.body.username.match(/\ \ /)
     return res.send(400, 'Invalid password') if isEmpty(req.body.password1) is '' or req.body.password1 isnt req.body.password2
     return res.send(400, 'Invalid email') if isEmpty(req.body.email) or req.body.email.length < 3 or req.body.email.indexOf('@') is -1
     return res.send(400, 'Invalid captcha') if isEmpty req.body.response

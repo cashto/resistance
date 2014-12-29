@@ -88,9 +88,9 @@
                     window.alert('Registration succeeded.');
                     window.location = 'index.html';
                 })
-                .fail(function () {
+                .fail(function (xhr) {
                     Recaptcha.reload();
-                    window.alert('Registration failed.');
+                    window.alert('Registration failed: ' + xhr.responseText);
                 });        
             });
         });

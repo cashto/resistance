@@ -139,7 +139,7 @@ var onJoin = function() {
     drawGameLog();
     drawGuns();
     $('#scoreboard').html('');
-    $('#chat-text').html('');
+    $('#chat-text').html('<div class=current></div>');
 }
 
 var onLeave = function() {

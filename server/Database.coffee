@@ -47,6 +47,7 @@ class Database
             "SELECT id FROM Users WHERE name=? AND passwd=HASHBYTES('sha2_256', ?) AND isValid=1"
             [name, password]
             (err, result) ->
+                console.log err if err
                 return cb(err) if err
                 return cb('not found') if result.length isnt 1
                 cb(null, result[0].id))

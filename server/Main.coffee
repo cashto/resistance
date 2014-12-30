@@ -52,7 +52,6 @@ app.post '/server/play', (req, res) ->
 app.post '/server/login', (req, res) ->
     g.db.getUserId req.body.username, req.body.password, (err, playerId) ->
         if err
-            console.log err
             res.clearCookie('sessionKey')
             res.send(401) # Unauthorized
         else
@@ -75,6 +74,7 @@ app.post '/server/register', (req, res) ->
     
     return res.send(400, 'Invalid username') if isEmpty req.body.username
     return res.send(400, 'Invalid character in username') if !req.body.username.split('').every((i) ->  32 <= i.charCodeAt(0) < 127)
+    return res.send(400, 'Invalid username') if req.body.username[0] is ' ' or req.body.username[req.body.username.length - 1] is ' '
     return res.send(400, 'Invalid username') if req.body.username.match(/\ \ /)
     return res.send(400, 'Invalid password') if isEmpty(req.body.password1) is '' or req.body.password1 isnt req.body.password2
     return res.send(400, 'Invalid email') if isEmpty(req.body.email) or req.body.email.length < 3 or req.body.email.indexOf('@') is -1

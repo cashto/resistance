@@ -52,6 +52,7 @@ app.post '/server/play', (req, res) ->
 app.post '/server/login', (req, res) ->
     g.db.getUserId req.body.username, req.body.password, (err, playerId) ->
         if err
+            console.log err
             res.clearCookie('sessionKey')
             res.send(401) # Unauthorized
         else

@@ -1,12 +1,32 @@
 sql = require 'msnodesql'
 
-class Database
+class AutoRetryConnection
     constructor: ->
-    
+    query: (queryStmt, params, cb, retry = 3) ->
+        if not @conn?
+            @initialize (err, conn) =>
+                if retry > 0
+                    @query(queryStmt, params, cb, retry - 1)
+                else 
+                    cb(err, conn)
+        else
+            @conn.query(queryStmt, params, (err, conn) =>
+                if err? and err.sqlstate is '08S01'
+                    @conn = null
+                    @query(queryStmt, params, cb, retry)
+                else
+                    cb(err,conn))
     initialize: (cb) ->
         sql.open process.env.RESISTANCE_DB_CONNECTION_STRING, (err, conn) => 
-            @connection = conn
-            cb(err, conn)
+            @conn = if err then null else conn
+            cb(err, conn)    
+            
+class Database
+    constructor: ->
+        @connection = new AutoRetryConnection()
+    
+    initialize: (cb) ->
+        @connection.initialize(cb)
         return
         
     addUser: (name, password, email, cb) ->

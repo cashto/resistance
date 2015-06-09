@@ -7,3 +7,7 @@ all:
 
 clean:
 	rm -rf release
+
+test: all
+	cat server/Room.coffee server/Game.coffee server/Player.coffee server/Database.coffee server/Lobby.coffee server/Test.coffee | coffee --compile --stdio > release/Test.js 
+	node release/Test.js

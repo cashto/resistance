@@ -116,3 +116,4 @@ class Database
                     games: res[0]
                     players: res[1]
                     gamePlayers: res[2]
+

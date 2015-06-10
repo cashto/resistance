@@ -70,4 +70,4 @@ INSERT INTO users(name, passwd, is_valid, email) VALUES ('<India>', '', true, 'i
 INSERT INTO users(name, passwd, is_valid, email) VALUES ('<Juliet>', '', true, 'juliet@example.com');
 
 /* Schema change: Games.gameType added */
-ALTER TABLE Games ADD gameType SMALLINT NOT NULL DEFAULT 1;
+ALTER TABLE Games ADD game_type SMALLINT NOT NULL DEFAULT 1;

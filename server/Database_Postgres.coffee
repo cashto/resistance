@@ -97,7 +97,11 @@ class Database
         "INSERT INTO gamelog(game_id, id, player_id, action) VALUES ($1, $2, $3, $4)"
         [gameId, id, playerId, action]
         (err, res) ->
-          if err then errH(err) else cb(null, res)
+          if err
+            console.log err
+            errH(err)
+          else
+            cb(null, res)
       )
     )
 
@@ -116,15 +120,26 @@ class Database
   getTables: (cb) ->
     @withClient(cb, (client, errH) ->
       async.map [
-        "SELECT id, start_time as startTime, end_time as endTime, spies_win as spiesWin, game_type as gameType FROM games WHERE end_time IS NOT NULL ORDER BY start_time"
+        "SELECT id, start_time, end_time, spies_win, game_type FROM games WHERE end_time IS NOT NULL ORDER BY start_time"
         "SELECT id, name FROM users"
-        "SELECT game_id as gameId, player_id as playerId, is_spy as isSpy FROM gameplayers as gp, games as g WHERE gp.game_id = g.id AND g.end_time IS NOT NULL"],
+        "SELECT game_id, player_id, is_spy FROM gameplayers as gp, games as g WHERE gp.game_id = g.id AND g.end_time IS NOT NULL"],
         (item, cb) => client.query item, [], cb
         (err, res) =>
           return errH(err) if err?
+          # This is a dirty dirty hack around case sensitivity in MSSQL which isn't in Postgres.
+          gamesRenamed = res[0].rows.map (x) ->
+              id: x.id
+              startTime: x.start_time
+              endTime: x.end_time
+              spiesWin: x.spies_win
+              gameType: x.game_type
+          gpRenamed = res[2].rows.map (x) ->
+              gameId: x.game_id
+              playerId: x.player_id
+              isSpy: x.is_spy
           cb null,
-            games: res[0]
-            players: res[1]
-            gamePlayers: res[2]
+            games: gamesRenamed
+            players: res[1].rows
+            gamePlayers: gpRenamed
     )
 

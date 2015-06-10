@@ -10,7 +10,7 @@ CREATE TABLE users
 (
     id SERIAL PRIMARY KEY, 
     name VARCHAR(32) NOT NULL UNIQUE, 
-    passwd BYTEA NOT NULL, 
+    passwd TEXT NOT NULL, 
     is_valid BOOLEAN NOT NULL,
     email TEXT NOT NULL,
     create_time TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -50,7 +50,7 @@ CREATE TABLE logins
 (
 	player_id INT NOT NULL REFERENCES users(id),
 	time TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	ip BYTEA NOT NULL
+	ip VARCHAR(30) NOT NULL
 );
 
 CREATE INDEX idx_logins on logins(player_id, time);

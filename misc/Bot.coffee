@@ -16,15 +16,16 @@ class Bot
         @gameover = false
 
     sendAjax: (options = {}) ->
-        #console.log options.body
+        console.log options.body
         req = http.request
-            #hostname: 'www.theresistanceonline.com'
+            hostname: '127.0.0.1'
+            port: 8080
             method: options.verb or 'POST',
             path: options.url or '/server/play'
             agent: false
             headers:
                 'Content-Type': 'application/json' 
-                'Cookie': @sessionKey
+                'Cookie': @sessionKey || ""
             (res) =>
                 readFully res, (data) =>
                     return if not options.cb?
@@ -48,7 +49,7 @@ class Bot
         @sendAjax verb:'GET', cb: @pollLoop
         
     start: ->
-        @sendAjax body: { username:@name, password:process.env.RESISTANCE_BOT_PASSWORD }, url: '/server/login', cb: @afterLogin
+        @sendAjax body: { username:@name, password:"" }, url: '/server/login', cb: @afterLogin
 
     afterLogin: (res, data) ->
         @sessionKey  = /(sessionKey=\w*)/.exec res.headers['set-cookie']

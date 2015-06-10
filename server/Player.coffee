@@ -34,4 +34,4 @@ class Player
         @connection.json(@pendingMessages)
         @pendingMessages = []
         @connection = null
-    
+

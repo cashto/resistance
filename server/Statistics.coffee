@@ -90,16 +90,17 @@ class Statistics
             2: "Avalon"
             3: "Basic"
             4: "Avalon+"
-            
-        for i in [0 ... 25]
-            game = tables.games[tables.games.length - i - 1]
-            html += "<tr>" +
-                "<td>#{game.startTime.toUTCString()}</td> " +
-                "<td>#{gameTypeName[game.gameType]}</td> " +
-                "<td>#{game.spies.length + game.resistance.length}</td> " +
-                "<td>#{((game.endTime.getTime() - game.startTime.getTime()) / 60000).toFixed(0)}</td> " +
-                "<td class='#{if game.spiesWin then '' else 'info'}'>#{game.resistance.map((i) -> i.name).join(', ')}</td> " +
-                "<td class='#{if game.spiesWin then 'info' else ''}'>#{game.spies.map((i) -> i.name).join(', ')}</td></tr>"
+        if tables.games.length > 0
+          max = Math.min(25,tables.games.length)
+          for i in [0 ... max]
+              game = tables.games[tables.games.length - i - 1]
+              html += "<tr>" +
+                  "<td>#{game.startTime.toUTCString()}</td> " +
+                  "<td>#{gameTypeName[game.gameType]}</td> " +
+                  "<td>#{game.spies.length + game.resistance.length}</td> " +
+                  "<td>#{((game.endTime.getTime() - game.startTime.getTime()) / 60000).toFixed(0)}</td> " +
+                  "<td class='#{if game.spiesWin then '' else 'info'}'>#{game.resistance.map((i) -> i.name).join(', ')}</td> " +
+                  "<td class='#{if game.spiesWin then 'info' else ''}'>#{game.spies.map((i) -> i.name).join(', ')}</td></tr>"
             
         html += "</table>"
         return html
@@ -121,25 +122,27 @@ class Statistics
         millisInHour = 60 * 60 * 1000
         millisInDay = 24 * millisInHour
         millisInWeek = 7 * millisInDay
+        rows = []
+        if tables.games.length > 0
         
-        startDays = tables.games.map (i) -> Math.floor(i.startTime.getTime() / millisInDay)
-        minDay = Math.min.apply null, startDays
-        maxDay = Math.max.apply null, startDays
-        
-        rows =
-            for startDay in [minDay .. maxDay - 7]
-                startTime = startDay * millisInDay
-                games = 0
-                players = {}
-                playerHours = 0
-                for game in tables.games when game.startTime.getTime() >= startTime and game.startTime.getTime() < startTime + millisInWeek
-                    ++games
-                    for player in game.spies
-                        players[player.id] = true
-                    for player in game.resistance
-                        players[player.id] = true
-                    playerHours += (game.spies.length + game.resistance.length) * (game.endTime.getTime() - game.startTime.getTime()) / millisInHour 
-                "[ new Date(#{startTime + millisInWeek}), #{games}, #{playerHours.toFixed(1)}, #{Object.keys(players).length} ],\n"
+          startDays = tables.games.map (i) -> Math.floor(i.startTime.getTime() / millisInDay)
+          minDay = Math.min.apply null, startDays
+          maxDay = Math.max.apply null, startDays
+          
+          rows =
+              for startDay in [minDay .. maxDay - 7]
+                  startTime = startDay * millisInDay
+                  games = 0
+                  players = {}
+                  playerHours = 0
+                  for game in tables.games when game.startTime.getTime() >= startTime and game.startTime.getTime() < startTime + millisInWeek
+                      ++games
+                      for player in game.spies
+                          players[player.id] = true
+                      for player in game.resistance
+                          players[player.id] = true
+                      playerHours += (game.spies.length + game.resistance.length) * (game.endTime.getTime() - game.startTime.getTime()) / millisInHour 
+                  "[ new Date(#{startTime + millisInWeek}), #{games}, #{playerHours.toFixed(1)}, #{Object.keys(players).length} ],\n"
         
         html = "<script>drawChart([['Date', 'Weekly Games', 'Player Hours', 'Unique Players'], #{rows.join('')}]);</script>"
         return html

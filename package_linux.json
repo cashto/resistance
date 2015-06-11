@@ -1,0 +1,19 @@
+{
+    "name": "the-resistance-online",
+    "version": "1.0.0",
+    "homepage": "http://www.theresistanceonline.com/",
+    "author": {
+        "name": "cashto"
+    },
+    "bugs": {
+        "url": "https://github.com/cashto/resistance/"
+    },
+    "license": "JSON",
+    "dependencies": {
+        "bcryptjs": "^2.1.0",
+        "express": "3.2.6",
+        "async": "0.2.10",
+        "pg": "^4.4.0"
+    }
+}   
+    

@@ -49,7 +49,7 @@ class Bot
         @sendAjax verb:'GET', cb: @pollLoop
         
     start: ->
-        @sendAjax body: { username:@name, password:"" }, url: '/server/login', cb: @afterLogin
+        @sendAjax body: { username:@name, password:process.env.RESISTANCE_BOT_PASSWORD || "" }, url: '/server/login', cb: @afterLogin
 
     afterLogin: (res, data) ->
         @sessionKey  = /(sessionKey=\w*)/.exec res.headers['set-cookie']

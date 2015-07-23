@@ -62,7 +62,7 @@ class Game extends Room
         @onRefresh(player)
         @onChat null, { msg: "#{player} has entered the game." }
         if @players.length is 1 then @addActivePlayer(player) else @askToJoinGame(player)
-        
+
     onRefresh: (player) ->
         player.send 'join'            
         @sendPlayers player
@@ -75,7 +75,8 @@ class Game extends Room
         player.send 'gameover' if @gameFinished
         player.send 'guns', { players:@guns }
         player.send 'votelog', @votelog
-    
+        @evaluateChatRestrictions(player)
+
     onPlayerLeave: (player) ->
         super
 
@@ -108,6 +109,7 @@ class Game extends Room
 #-----------------------------------------------------------------------------
         
     onChat: (player, request) ->
+        if @evaluateChatRestrictions(player) is true then return
         for p in @players
             cmd =
                 player: (if player? then player.name else 'server')
@@ -236,6 +238,9 @@ class Game extends Room
         
         @gameStarted = true
         @onPlayersChanged()
+        for player in @players
+          @evaluateChatRestrictions(player)
+
         @missionTeamSizes = [
             [2, 3, 2, 3, 3]
             [2, 3, 4, 3, 4]
@@ -614,6 +619,7 @@ class Game extends Room
         @gameFinished = true
         @sendAll 'gameover'
         @sendAll '-vote'
+        @sendAll 'unrestrictChat'
         @sendPlayers(p) for p in @players
         @setStatus (if spiesWin then 'The spies win!' else 'The resistance wins!')
         @lobby.onGameUpdate(this)
@@ -623,7 +629,7 @@ class Game extends Room
 #-----------------------------------------------------------------------------    
 # Helper functions
 #-----------------------------------------------------------------------------    
-   
+    
     addCard: (player, card) ->
         @sendAll '+card', {player:player.id, card:card}
         @cards.push {player:player, card:card}
@@ -660,7 +666,14 @@ class Game extends Room
         log = { mission:@mission, round:@round, msg:msg }
         @sendAll 'gamelog', log 
         @log.push log
-    
+
+    evaluateChatRestrictions: (player) ->
+        if player and @gameStarted and !@gameFinished and
+          !(player.id in @activePlayers.map((p)->p.id))
+            player.send 'restrictChat'
+            return true
+        return false
+
     neighboringPlayers: (player) ->
         ans = []
         prevPlayer = @activePlayers[@activePlayers.length - 1]

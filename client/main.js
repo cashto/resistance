@@ -145,12 +145,24 @@ var onJoin = function() {
 var onLeave = function() {
     $("#game-container").addClass('hidden');
     $("#lobby-container").removeClass('hidden');
+    $("#chat-input").removeAttr("disabled");
+    $("#chat-input").attr("placeholder","Type a message");
     drawGames();
 }
 
 var onChat = function(data) {
     updateChat($('#chat-text'), data);
     highlightTab('#chat-nav-tab');
+}
+
+var onRestrictChat = function() {
+    $("#chat-input").attr("disabled",true);
+    $("#chat-input").attr("placeholder","Game in progress. Chat is restricted to active players.");
+}
+
+var onUnrestrictChat = function() {
+    $("#chat-input").removeAttr("disabled");
+    $("#chat-input").attr("placeholder","Type a message");
 }
 
 var onAllChat = function(data) {
@@ -354,6 +366,8 @@ var handlers = {
     'join': onJoin,
     'leave': onLeave,
     'chat': onChat,
+    'restrictChat': onRestrictChat,
+    'unrestrictChat': onUnrestrictChat,
     'allChat': onAllChat,
     'status': onStatus,
     'msg': onMsg,

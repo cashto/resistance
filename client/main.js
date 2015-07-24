@@ -396,7 +396,8 @@ var drawGames = function() {
     var gameTypeNames = {
         1: 'Original',
         2: 'Avalon',
-        3: 'Basic'
+        3: 'Basic',
+        5: 'Hunter'
     };
     for (var i = 0; i < g.games.length; ++i) {
         html += 
@@ -780,6 +781,7 @@ $(function() {
     $('#new-game-original').click(onCreateGame(1));
     $('#new-game-avalon').click(onCreateGame(2));
     $('#new-game-basic').click(onCreateGame(3));
+    $('#new-game-hunter').click(onCreateGame(5));
     $('#leave-game').click(onLeaveGame);
     $('#prev-gamelog').click(onPrevGameLog);
     $('#next-gamelog').click(onNextGameLog);

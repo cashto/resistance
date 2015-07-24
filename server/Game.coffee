@@ -48,6 +48,13 @@ class Game extends Room
             combineMordredAndAssassin: false
             useLadyOfTheLake: false
         @ineligibleLadyOfTheLakeRecipients = []
+        @hunterOptions = 
+            useDummyAgent: false
+            useCoordinator: false
+            useDeepAgent: false
+            usePretender: false
+            useBlame: false
+            useInquisitor: false
         
     onRequest: (player, request) ->
         if @dbId? and request.cmd not in ['chat', 'allChat']
@@ -194,9 +201,13 @@ class Game extends Room
         if @questions.every((i)->i.player isnt gameController)
             choices = ['OK', 'Remove player']
             choices.push(@getAvalonOptions()) if @gameType is AVALON_GAMETYPE
+            choices.push(@getHunterOptions()) if @gameType is HUNTER_GAMETYPE
+            message = "Press OK to start game"
+            message += " with " + @getAvalonRolesString() if @gameType is AVALON_GAMETYPE
+            message += " with " + @getHunterRolesString() if @gameType is HUNTER_GAMETYPE
             @askOne gameController,
                 cmd: 'choose'
-                msg: "Press OK to start game#{if @gameType is AVALON_GAMETYPE then ' with ' + @getAvalonRolesString() else ''}."
+                msg: message
                 choices: choices
                 (response) =>
                     switch response.choice
@@ -209,7 +220,8 @@ class Game extends Room
                         when 'Remove player'
                             @askToRemovePlayer(gameController)
                         else
-                            @setAvalonOption(response.choice)
+                            @setAvalonOption(response.choice) if @gameType is AVALON_GAMETYPE
+                            @setHunterOption(response.choice) if @gameType is HUNTER_GAMETYPE
                             @askToStartGame()
                             
     askToRemovePlayer: (gameController) ->
@@ -929,3 +941,86 @@ class Game extends Room
         return 5 if @gameType isnt AVALON_GAMETYPE
         badGuys = @getAvalonRoles().length - (if @avalonOptions.usePercival then 2 else 1)
         return [5, 5, 5, 7, 10][badGuys]
+        
+    getHunterOptions: ->
+        ans = ['Options']
+        
+        addRemove = (flag, role) ->
+            ans.push((if flag then 'Remove ' else 'Add ') + role)
+            
+        addRemove @hunterOptions.useDummyAgent, 'Dummy Agent'
+        addRemove @hunterOptions.useCoordinator, 'Coordinator'
+        
+        if @hunterOptions.useDeepAgent
+            ans.push(if @hunterOptions.usePretender then 'Remove Deep Agent and Pretender' else 'Remove Deep Agent')
+        else
+            ans.push('Add Deep Agent')
+
+        if @hunterOptions.usePretender
+            ans.push('Remove Pretender')
+        else
+            ans.push(if @hunterOptions.useDeepAgent then 'Add Pretender' else 'Add Deep Agent and Pretender')
+
+        addRemove @hunterOptions.useInquisitor, 'Inquisitor'
+        return ans
+
+    setHunterOption: (choice) ->
+        switch choice
+            when 'Add Dummy Agent'
+                @hunterOptions.useDummyAgent = true
+            when 'Add Coordinator'
+                @hunterOptions.useCoordinator = true
+            when 'Add Deep Agent'
+                @hunterOptions.useDeepAgent = true
+            when 'Add Pretender', 'Add Deep Agent and Pretender'
+                @hunterOptions.useDeepAgent = true
+                @hunterOptions.usePretender = true
+            when 'Add Inquisitor'
+                @hunterOptions.useInquisitor = true
+            when 'Remove Dummy Agent'
+                @hunterOptions.useDummyAgent = false
+            when 'Remove Coordinator'
+                @hunterOptions.useCoordinator = false
+            when 'Remove Deep Agent', 'Remove Deep Agent and Pretender'
+                @hunterOptions.useDeepAgent = false
+                @hunterOptions.usePretender = false
+            when 'Remove Pretender'
+                @hunterOptions.usePretender = false
+            when 'Remove Inquisitor'
+                @hunterOptions.useInquisitor = false
+                
+    getHunterRoles: ->
+        roles = []
+        if @activePlayers.length < 8
+          roles.push('Resistance Chief')
+        else
+          roles.push('2x Resistance Chief')
+        roles.push('Resistance Hunter')
+        roles.push('Dummy Agent') if @hunterOptions.useDummyAgent
+        roles.push('Coordinator') if @hunterOptions.useCoordinator
+        
+        if @activePlayers.length < 10
+          roles.push('Spy Chief')
+        else
+          roles.push('2x Spy Chief')
+        roles.push('Spy Hunter')
+        roles.push('Deep Agent') if @hunterOptions.useDeepAgent
+        roles.push('Pretender') if @hunterOptions.usePretender
+        #printline 'Roles: ' + roles
+        return roles
+    
+    getHunterRolesForGame: ->
+        roles = @getHunterRoles()
+        if roles.remove('2x Resistance Chief') isnt null
+          roles.push('Resistance Chief')
+          roles.push('Resistance Chief')
+        if roles.remove('2x Spy Chief') isnt null
+          roles.push('Spy Chief')
+          roles.push('Spy Chief')
+        return roles
+
+    getHunterRolesString: ->
+        return '' if @gameType isnt HUNTER_GAMETYPE
+        roles = @getHunterRoles()
+        roles.push('Inquisitor') if @hunterOptions.useInquisitor
+        return @nameList(roles)

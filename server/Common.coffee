@@ -19,12 +19,15 @@ defineMethod Array, 'shuffle', ->
 ORIGINAL_GAMETYPE = 1
 AVALON_GAMETYPE = 2
 BASIC_GAMETYPE = 3
-
 # not really a gametype, but stored in the DB to distinguish Avalon games 
 # roles besides Merlin and Assassin.
 AVALON_PLUS_GAMETYPE = 4 
+HUNTER_GAMETYPE = 5
+# also not really a gametype, but stored in the DB to distinguish Hunter games 
+# roles besides Chiefs and Hunters.
+HUNTER_PLUS_GAMETYPE = 6
 
-allGameTypes = [ORIGINAL_GAMETYPE, AVALON_GAMETYPE, BASIC_GAMETYPE]
+allGameTypes = [ORIGINAL_GAMETYPE, AVALON_GAMETYPE, BASIC_GAMETYPE, HUNTER_GAMETYPE]
 
 xmlEscape = (s) ->
     return s

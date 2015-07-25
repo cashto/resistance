@@ -951,9 +951,18 @@ class Game extends Room
         return @nameList(roles)
         
     getRequiredPlayers: ->
-        return 5 if @gameType isnt AVALON_GAMETYPE
-        badGuys = @getAvalonRoles().length - (if @avalonOptions.usePercival then 2 else 1)
-        return [5, 5, 5, 7, 10][badGuys]
+        if @gameType is AVALON_GAMETYPE
+          badGuys = @getAvalonRoles().length - (if @avalonOptions.usePercival then 2 else 1)
+          return [5, 5, 5, 7, 10][badGuys]
+        if @gameType is HUNTER_GAMETYPE
+          resRoles = 0
+          ++resRoles if @hunterOptions.useDummyAgent
+          ++resRoles if @hunterOptions.useCoordinator
+          ++resRoles if @hunterOptions.usePretender
+          if resRoles is 3 then return 9
+          if @hunterOptions.useDeepAgent then return 7
+          if resRoles is 2 then return 6
+        return 5
         
     getHunterOptions: ->
         ans = ['Options']

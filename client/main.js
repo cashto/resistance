@@ -11,7 +11,8 @@ var cardNames = {
     Overheard: 'Overheard',
     TakeResponsibility: 'Take Responsibility',
     OpinionMaker: 'Opinion Maker',
-    LadyOfTheLake: 'Lady of the Lake'
+    LadyOfTheLake: 'Lady of the Lake',
+    Inquisitor: 'Inquisitor'
 };
 
 var g;

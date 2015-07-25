@@ -33,6 +33,7 @@ class Game extends Room
             TakeResponsibility: 'TAKE RESPONSIBILITY'
             OpinionMaker: 'OPINION MAKER'
             LadyOfTheLake: 'LADY OF THE LAKE'
+            Inquisitor: 'INQUISITOR'
         @removedPlayerIds = []
         @votelog =
             rounds: [0, 0, 0, 0, 0]
@@ -274,28 +275,54 @@ class Game extends Room
             [1, 1, 1, 2, 1],
             [1, 1, 1, 2, 1],
             [1, 1, 1, 2, 1]][@activePlayers.length - 5]
-        
-        whoIsInTheGame = "#{@getAvalonRolesString()} are in this game."
-        @gameLog whoIsInTheGame if @gameType is AVALON_GAMETYPE
+            
+        if @gameType is AVALON_GAMETYPE
+            whoIsInTheGame = "#{@getAvalonRolesString()} are in this game."
+            @gameLog whoIsInTheGame
+        if @gameType is HUNTER_GAMETYPE
+            whoIsInTheGame = "#{@getHunterRolesString()} are in this game."
+            @gameLog whoIsInTheGame
+          
         for p in @activePlayers
-            roleMsg = 
+            roleMsg = ""
+            if @gameType is AVALON_GAMETYPE
+              roleMsg = 
                 if p.id in [@merlin, @percival, @morgana, @oberon, @mordred]
                     "You are #{p.role}. "
                 else if p.id is @assassin
                     "You are the assassin. "
                 else
                     ""
+            if @gameType is HUNTER_GAMETYPE
+              for chiefs in [@resistanceChiefs, @spyChiefs]
+                  if p.id in chiefs
+                    if chiefs.length is 1
+                      roleMsg = "You are the #{p.role}. "
+                    else
+                      roleMsg = "You are a #{p.role}. "
+              if p.id in [@resistanceHunter, @spyHunter, @dummyAgent, @coordinator, @deepAgent, @pretender]
+                  roleMsg = "You are the #{p.role}. "
+                  
 
             p.sendMsg "#{roleMsg}You are #{if p in @spies then 'a SPY' else 'RESISTANCE!'}! There are #{@spies.length} spies in this game."
-            p.sendMsg whoIsInTheGame if @gameType is AVALON_GAMETYPE
+            p.sendMsg whoIsInTheGame if @gameType is AVALON_GAMETYPE or @gameType is HUNTER_GAMETYPE
                 
         delete state.spies
         gameType = @gameType
         gameType = AVALON_PLUS_GAMETYPE if @percival or @morgana or @oberon or @mordred or @ladyOfTheLake
+        gameType = HUNTER_PLUS_GAMETYPE if @dummyAgent or @coordinator or @deepAgent or @pretender or @inquisitor
         
+        if @inquisitor? then @ladyOfTheLake = @inquisitor
         if @ladyOfTheLake
+            if @inquisitor?
+                @ladyInquisitorCard = 'Inquisitor'
+                @ladyInquisitorText = 'INQUISITOR'
+            else
+                @ladyInquisitorCard = 'LadyOfTheLake'
+                @ladyInquisitorText = 'LADY OF THE LAKE'
+
             ladyOfTheLake = @findPlayer(@ladyOfTheLake)
-            @addCard ladyOfTheLake, 'LadyOfTheLake'
+            @addCard ladyOfTheLake, @ladyInquisitorCard
             @ineligibleLadyOfTheLakeRecipients.push(ladyOfTheLake)
             
         @db.createGame JSON.stringify(state), gameType, @activePlayers, @spies,
@@ -314,18 +341,18 @@ class Game extends Room
         
         return @askToPlayStrongLeader() if @round isnt 1 or @mission < 3
         
-        @ask 'deciding who to give LADY OF THE LAKE to.',
-            @makeQuestions @whoeverHas('LadyOfTheLake'),
+        @ask "deciding who to give #{@ladyInquisitorText} to.",
+            @makeQuestions @whoeverHas(@ladyInquisitorCard),
                 cmd: 'choosePlayers'
-                msg: 'Choose a player to give LADY OF THE LAKE to.'
+                msg: "Choose a player to give #{@ladyInquisitorText} to."
                 n: 1,
                 players: @getIds @everyoneExcept @ineligibleLadyOfTheLakeRecipients
                 (response, doneCb) =>
                     target = response.choice[0]
                     response.player.sendMsg "#{target} is #{if target in @spies then 'a SPY' else 'RESISTANCE'}!"
-                    @sendAllMsgAndGameLog "#{response.player} gave LADY OF THE LAKE to #{target}.", [response.player]
-                    @subCard response.player, 'LadyOfTheLake'
-                    @addCard target, 'LadyOfTheLake'
+                    @sendAllMsgAndGameLog "#{response.player} gave #{@ladyInquisitorText} to #{target}.", [response.player]
+                    @subCard response.player, @ladyInquisitorCard
+                    @addCard target, @ladyInquisitorCard
                     @ineligibleLadyOfTheLakeRecipients.push(target)
                     doneCb()
             => @askToPlayStrongLeader()
@@ -724,8 +751,14 @@ class Game extends Room
             @spies.some((i) -> i.id is player.id)
 
         response =
-            for them in @activePlayers 
-                iKnowTheyAreASpy =
+            for them in @activePlayers
+                if @gameType is HUNTER_GAMETYPE
+                  iKnowTheyAreASpy =
+                    me.id is them.id or
+                    (isSpy(me) and me.id isnt @deepAgent and
+                     not (@pretender? and them.id is @deepAgent))
+                else
+                  iKnowTheyAreASpy =
                     me.id is them.id or
                     (isSpy(me) and me.id isnt @oberon and them.id isnt @oberon) or
                     (me.id is @merlin and them.id isnt @mordred)
@@ -739,6 +772,16 @@ class Game extends Room
                             them.role
                         else if me.id is @percival and (them.id is @merlin or them.id is @morgana)
                             if @morgana? then "Merlin?" else "Merlin"
+                        else if @resistanceChiefs? and me.id in @resistanceChiefs and
+                          (them.id in @resistanceChiefs or them.id is @coordinator)
+                            them.role
+                        else if isSpy(me) and me.id isnt @deepAgent
+                            if @spyChiefs? and them.id in @spyChiefs
+                                them.role
+                            else if them.id is @deepAgent or them.id is @pretender
+                                if @pretender? then "Deep Agent?" else "Deep Agent"
+                            else
+                                undefined
                         else
                             undefined
                 }
@@ -813,28 +856,49 @@ class Game extends Room
             leader: Math.floor(Math.random() * @activePlayers.length)
             
         resistanceRoles = ['Resistance', 'Merlin', 'Percival']
+        resistanceRoles = ['Resistance', 'Resistance Chief', 'Resistance Hunter',
+          'Dummy Agent','Coordinator','Pretender'] if @gameType is HUNTER_GAMETYPE
         spiesRequired = Math.floor((@activePlayers.length - 1) / 3) + 1
 
-        roles = (if @gameType is AVALON_GAMETYPE then @getAvalonRoles() else [])
+        roles = []
+        if @gameType is AVALON_GAMETYPE then roles = @getAvalonRoles()
+        if @gameType is HUNTER_GAMETYPE then roles = @getHunterRolesForGame()
         for i in [roles.filter((i) -> i not in resistanceRoles).length ... spiesRequired]
             roles.push('Spy')
         for i in [roles.length ... @activePlayers.length]
             roles.push('Resistance')
         roles.shuffle()
         
+        if @gameType is HUNTER_GAMETYPE
+          state.resistanceChiefs = []
+          state.spyChiefs = []
+          
         for role, i in roles
             @activePlayers[i].role = role
             state.spies.push(@activePlayers[i]) if role not in resistanceRoles
-            state.merlin = @activePlayers[i].id if role is 'Merlin'
-            state.assassin = @activePlayers[i].id if role in ['Assassin', 'Mordred/Assassin']
-            state.percival = @activePlayers[i].id if role is 'Percival'
-            state.morgana = @activePlayers[i].id if role is 'Morgana'
-            state.oberon = @activePlayers[i].id if role is 'Oberon'
-            state.mordred = @activePlayers[i].id if role in ['Mordred', 'Mordred/Assassin']
-            
+            if @gameType is AVALON_GAMETYPE
+              state.merlin = @activePlayers[i].id if role is 'Merlin'
+              state.assassin = @activePlayers[i].id if role in ['Assassin', 'Mordred/Assassin']
+              state.percival = @activePlayers[i].id if role is 'Percival'
+              state.morgana = @activePlayers[i].id if role is 'Morgana'
+              state.oberon = @activePlayers[i].id if role is 'Oberon'
+              state.mordred = @activePlayers[i].id if role in ['Mordred', 'Mordred/Assassin']
+            if @gameType is HUNTER_GAMETYPE
+              state.resistanceChiefs.push(@activePlayers[i].id) if role is 'Resistance Chief'
+              state.resistanceHunter = @activePlayers[i].id if role is 'Resistance Hunter'
+              state.spyChiefs.push(@activePlayers[i].id) if role is 'Spy Chief'
+              state.spyHunter = @activePlayers[i].id if role is 'Spy Hunter'
+              state.dummyAgent = @activePlayers[i].id if role is 'Dummy Agent'
+              state.coordinator = @activePlayers[i].id if role is 'Coordinator'
+              state.deepAgent = @activePlayers[i].id if role is 'Deep Agent'
+              state.pretender = @activePlayers[i].id if role is 'Pretender'
+
         if @avalonOptions.useLadyOfTheLake
             state.ladyOfTheLake = @activePlayers[state.leader].id
-                    
+
+        if @hunterOptions.useInquisitor
+            state.inquisitor = @activePlayers[state.leader].id
+
         if @gameType is ORIGINAL_GAMETYPE
             deck = [
                 "KeepingCloseEye"
@@ -1031,10 +1095,10 @@ class Game extends Room
     
     getHunterRolesForGame: ->
         roles = @getHunterRoles()
-        if roles.remove('2x Resistance Chief') isnt null
+        if roles.remove('2x Resistance Chief') isnt undefined
           roles.push('Resistance Chief')
           roles.push('Resistance Chief')
-        if roles.remove('2x Spy Chief') isnt null
+        if roles.remove('2x Spy Chief') isnt undefined
           roles.push('Spy Chief')
           roles.push('Spy Chief')
         return roles

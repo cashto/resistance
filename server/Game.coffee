@@ -55,6 +55,7 @@ class Game extends Room
             usePretender: false
             useBlame: false
             useInquisitor: false
+        @startQuestionId = 1
         
     onRequest: (player, request) ->
         if @dbId? and request.cmd not in ['chat', 'allChat']
@@ -198,14 +199,15 @@ class Game extends Room
         else
             @setStatus "Waiting for #{gameController} to start the game ..."
         
+        choices = ['OK', 'Remove player']
+        choices.push(@getAvalonOptions()) if @gameType is AVALON_GAMETYPE
+        choices.push(@getHunterOptions()) if @gameType is HUNTER_GAMETYPE
+        message = "Press OK to start game"
+        message += " with " + @getAvalonRolesString() if @gameType is AVALON_GAMETYPE
+        message += " with " + @getHunterRolesString() if @gameType is HUNTER_GAMETYPE
+        
         if @questions.every((i)->i.player isnt gameController)
-            choices = ['OK', 'Remove player']
-            choices.push(@getAvalonOptions()) if @gameType is AVALON_GAMETYPE
-            choices.push(@getHunterOptions()) if @gameType is HUNTER_GAMETYPE
-            message = "Press OK to start game"
-            message += " with " + @getAvalonRolesString() if @gameType is AVALON_GAMETYPE
-            message += " with " + @getHunterRolesString() if @gameType is HUNTER_GAMETYPE
-            @askOne gameController,
+            @startQuestionId = @askOne gameController,
                 cmd: 'choose'
                 msg: message
                 choices: choices
@@ -223,6 +225,11 @@ class Game extends Room
                             @setAvalonOption(response.choice) if @gameType is AVALON_GAMETYPE
                             @setHunterOption(response.choice) if @gameType is HUNTER_GAMETYPE
                             @askToStartGame()
+        else
+          @updateAskOne @startQuestionId, gameController,
+              cmd: 'choose'
+              msg: message
+              choices: choices
                             
     askToRemovePlayer: (gameController) ->
         @askOne gameController,
@@ -743,6 +750,12 @@ class Game extends Room
         question.choiceId = @nextId++
         @questions.push { player:player, question:question, cb:cb }
         player.send question.cmd, question
+        return question.choiceId
+
+    updateAskOne: (questionId, player, cmd, cb) ->
+        question = JSON.parse(JSON.stringify(cmd))
+        question.choiceId = questionId
+        player.send question.cmd, question
 
     ask: (status, questions, cb = ->) ->
         return cb() if questions.length is 0
@@ -996,17 +1009,15 @@ class Game extends Room
         else
           roles.push('2x Resistance Chief')
         roles.push('Resistance Hunter')
-        roles.push('Dummy Agent') if @hunterOptions.useDummyAgent
-        roles.push('Coordinator') if @hunterOptions.useCoordinator
-        
         if @activePlayers.length < 10
           roles.push('Spy Chief')
         else
           roles.push('2x Spy Chief')
         roles.push('Spy Hunter')
+        roles.push('Dummy Agent') if @hunterOptions.useDummyAgent
+        roles.push('Coordinator') if @hunterOptions.useCoordinator
         roles.push('Deep Agent') if @hunterOptions.useDeepAgent
         roles.push('Pretender') if @hunterOptions.usePretender
-        #printline 'Roles: ' + roles
         return roles
     
     getHunterRolesForGame: ->

@@ -193,6 +193,13 @@ var onMsg = function(data) {
 }
 
 var onChoose = function(data) {
+    for (var idx = 0; idx < g.choices.length; ++idx) {
+        if (g.choices[idx].choiceId === data.choiceId) {
+            g.choices[idx] = data;
+            drawMsgArea();
+            return;
+        }
+    }
     g.choices.push(data);
     drawMsgArea();
     if (data.cmd === 'chooseTakeCard') {

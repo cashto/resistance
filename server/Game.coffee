@@ -492,7 +492,7 @@ class Game extends Room
                     doneCb()
 
     askLeaderForInvestigator: (context, cb) ->
-        return cb(context) if @gameType isnt HUNTER_GAMETYPE
+        return cb(context) if @gameType isnt HUNTER_GAMETYPE or @mission is 5
         @activePlayers[@leader].send '-vote'
         @ask 'choosing the mission INVESTIGATOR ...',
             @makeQuestions [@activePlayers[@leader]],

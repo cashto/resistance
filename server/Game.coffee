@@ -584,17 +584,36 @@ class Game extends Room
                 
     askMissionMembersForVote: (context) ->
         context.votes = []
-        @ask 'voting on the success of the mission ...',
-            @makeQuestions context.team,
+        team = context.team
+        spyChiefsOnTeam = []
+        if @spyChiefs?
+            team = []
+            for p in context.team
+                if p.id in @spyChiefs
+                    spyChiefsOnTeam.push(p)
+                else
+                    team.push(p)
+        questions = @makeQuestions team,
+            cmd: 'choose'
+            msg: 'Do you want the mission to succeed or fail?'
+            choices: ['Succeed', 'Fail'],
+            (response, doneCb) => 
+                if response.player not in @spies and response.choice is 'Fail'
+                    response.player.sendMsg "You are not a spy! Your vote has been changed to 'Succeed', since surely that's what you meant to do."
+                    response.choice = 'Succeed'
+                context.votes.push(response)
+                doneCb()
+        if spyChiefsOnTeam.length > 0
+            questionsSpyChiefs = @makeQuestions spyChiefsOnTeam,
                 cmd: 'choose'
                 msg: 'Do you want the mission to succeed or fail?'
-                choices: ['Succeed', 'Fail']
+                choices: ['Succeed', 'Chief Fail']
                 (response, doneCb) => 
-                    if response.player not in @spies and response.choice is 'Fail'
-                        response.player.sendMsg "You are not a spy! Your vote has been changed to 'Succeed', since surely that's what you meant to do."
-                        response.choice = 'Succeed'
                     context.votes.push(response)
                     doneCb()
+            questions.push(questionsSpyChiefs...) if questionsSpyChiefs.length > 0
+        @ask 'voting on the success of the mission ...',
+            questions,
             =>
                 for response in context.votes when context.spotlight is response.player
                     @sendAllMsgAndGameLog "#{context.spotlight} voted for #{if response.choice is 'Succeed' then 'SUCCESS' else 'FAILURE'}."
@@ -645,11 +664,21 @@ class Game extends Room
             "Three players",
             "Four players"
         ]
+        
+        chiefFailMsg = [
+            " No failure votes were CHIEF fails.",
+            " One failure vote was a CHIEF fail.",
+            " Two failure votes were CHIEF fails."
+        ]
     
         requiredFailures = @failuresRequired[@mission - 1]
         actualFailures = (vote for vote in context.votes when vote.choice isnt 'Succeed').length
         success = actualFailures < requiredFailures
-        @sendAllMsgAndGameLog "The mission #{if success then 'SUCCEEDED' else 'FAILED'}. #{nPlayers[actualFailures]} voted for failure."
+        msg = "The mission #{if success then 'SUCCEEDED' else 'FAILED'}. #{nPlayers[actualFailures]} voted for failure."
+        if @gameType is HUNTER_GAMETYPE and !success
+            chiefFailures = (vote for vote in context.votes when vote.choice is 'Chief Fail').length
+            msg += chiefFailMsg[chiefFailures]
+        @sendAllMsgAndGameLog msg
         
         @score.push success
         @sendAll 'scoreboard', @getScoreboard()

@@ -22,6 +22,7 @@ class Game extends Room
         @round = 1
         @score = []
         @guns = []
+        @investigator = null
         @cardName =
             KeepingCloseEye: 'KEEPING A CLOSE EYE ON YOU'
             EstablishConfidence: 'ESTABLISH CONFIDENCE'
@@ -41,6 +42,7 @@ class Game extends Room
             approve: []
             reject: []
             onteam: []
+            investigator: []
         @avalonOptions =
             usePercival: false
             useMorgana: false
@@ -337,6 +339,7 @@ class Game extends Room
         @sendAll 'scoreboard', @getScoreboard()
         @sendAll 'leader', { player:@activePlayers[@leader].id }
         @setGuns []
+        @setInvestigator null
         @gameLog "#{@activePlayers[@leader]} is the mission leader."
         
         return @askToPlayStrongLeader() if @round isnt 1 or @mission < 3
@@ -380,6 +383,7 @@ class Game extends Room
         @votelog.approve.push []
         @votelog.reject.push []
         @votelog.onteam.push []
+        @votelog.investigator.push null
         
         return @askLeaderForTeam() if @round isnt 1 or @gameType isnt ORIGINAL_GAMETYPE
         cardsRequired = Math.floor((@activePlayers.length - 3) / 2)
@@ -473,18 +477,38 @@ class Game extends Room
                     context = 
                         msg: "#{response.player} chose mission team: #{@playerNameList(response.choice)}."
                         team: response.choice
+                        investigator: null
                         votes: []
                     @votelog.onteam.pop()
                     @votelog.onteam.push (p.id for p in response.choice)
-                    @gameLog context.msg
                     @setGuns response.choice.map (i) -> i.id
-                    @sendAll '-vote'
-                    opinionMakers = @whoeverHas('OpinionMaker')
-                    @askForTeamApproval opinionMakers, context, (context) =>
-                        @askForTeamApproval @everyoneExcept(opinionMakers), context, (context) =>
-                            @checkTeamApproval(context)
+                    @askLeaderForInvestigator context, (context) =>
+                        @gameLog context.msg
+                        @sendAll '-vote'
+                        opinionMakers = @whoeverHas('OpinionMaker')
+                        @askForTeamApproval opinionMakers, context, (context) =>
+                            @askForTeamApproval @everyoneExcept(opinionMakers), context, (context) =>
+                                @checkTeamApproval(context)
                     doneCb()
-                
+
+    askLeaderForInvestigator: (context, cb) ->
+        return cb(context) if @gameType isnt HUNTER_GAMETYPE
+        @activePlayers[@leader].send '-vote'
+        @ask 'choosing the mission INVESTIGATOR ...',
+            @makeQuestions [@activePlayers[@leader]],
+                cmd: 'choosePlayers'
+                msg: "Choose an INVESTIGATOR for your mission team.", 
+                n: 1
+                players: @getIds @everyoneExcept [context.team..., @activePlayers[@leader]]
+                (response) =>
+                    context.msg += " #{response.player} chose #{response.choice[0].name} as INVESTIGATOR."
+                    context.investigator = response.choice[0]
+                    @votelog.investigator.pop()
+                    @votelog.investigator.push(response.choice[0].id)
+                    @setInvestigator response.choice[0].id
+                    cb(context)
+                    
+                    
     askForTeamApproval: (players, context, cb) ->
         responses = []
         @ask 'voting on the mission team ...',
@@ -939,7 +963,11 @@ class Game extends Room
     setGuns: (guns) ->
         @guns = guns
         @sendAll 'guns', { players: guns }
-        
+    
+    setInvestigator: (investigator) ->
+        @investigator = investigator
+        @sendAll 'investigator', { player: investigator }
+    
     getAvalonOptions: ->
         ans = ['Options']
         

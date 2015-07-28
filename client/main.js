@@ -30,8 +30,9 @@ var resetGlobals = function() {
         gamelogIdx: 0,
         highlights: {},
         guns: [],
+        investigator: null,
         games: [],
-        votelog: { rounds:[0,0,0,0,0], approve:[], reject:[], onteam:[], leader:[] },
+        votelog: { rounds:[0,0,0,0,0], approve:[], reject:[], onteam:[], leader:[], investigator:[]},
         scoreboard: {}
     };
 }
@@ -41,6 +42,7 @@ var leaderOffsetX = 55;
 var leaderOffsetY = 60;
 var gunsOffsetX = 5;
 var gunsOffsetY = 40;
+var investigatorOffsetX = 7;
 
 // User input handlers
 var onJoinGame = function(id) {
@@ -139,6 +141,7 @@ var onJoin = function() {
     drawMsgArea();
     drawGameLog();
     drawGuns();
+    drawInvestigator();
     $('#scoreboard').html('');
     $('#chat-text').html('<div class=current></div>');
 }
@@ -277,6 +280,7 @@ var onScoreboard = function(data) {
         g.votelog.approve.push([]);
         g.votelog.reject.push([]);
         g.votelog.onteam.push([]);
+        g.votelog.investigator.push(null);
         drawVoteLog();
     }
 }
@@ -337,6 +341,21 @@ var onGuns = function(data) {
     }
 }
 
+var onInvestigator = function(data) {
+      g.investigator = data.player;
+      drawInvestigator();
+      if(g.investigator !== null) { 
+          var p = $('#player' + g.investigator).position();
+          $('#investigator-mark').animate({
+              left: p.left + investigatorOffsetX,
+              top: p.top,
+          });
+          
+          g.votelog.investigator[g.votelog.investigator.length - 1] = g.investigator;
+          drawVoteLog();
+      }
+}
+
 var onAddGame = function(data) {
     for (var i = 0; i < g.games.length; ++i) {
         if (g.games[i].id === data.id) {
@@ -392,6 +411,7 @@ var handlers = {
     '-vote': onSubVote,
     'gamelog': onGameLog,
     'guns': onGuns,
+    'investigator': onInvestigator,
     '+game': onAddGame,
     '-game': onSubGame,
     'votelog': onVoteLog,
@@ -445,6 +465,17 @@ var drawGuns = function() {
     for (var i = 0; i < g.guns.length; ++i) {
         $('#gun' + i).click(onClickUserTile(g.guns[i]));
     }
+}
+
+var drawInvestigator = function() {
+  var html = '';
+  var width = $('#game-field').width();
+  if (g.investigator !== null) {
+      html += '<img id=investigator-mark src="investigator.png" style="position:absolute; top:' + 200 + 'px; left:' + (width / 2 - 50) + 'px"></div>';
+  }
+
+  $('#investigator-field').html(html);
+  $('#investigator-mark').click(onClickUserTile(g.investigator));
 }
 
 var drawGameLog = function() {
@@ -527,7 +558,8 @@ var drawVoteLog = function() {
             var approve = (g.votelog.approve[j].indexOf(id) >= 0) ? 'approve' : '';
             var reject = (g.votelog.reject[j].indexOf(id) >= 0) ? 'reject' : '';
             var onteam = (g.votelog.onteam[j].indexOf(id) >= 0) ? '<i class="icon-ok"></i>' : '';
-            html += '<td class="' + approve + ' ' + reject + ' ' + leader + '">' + onteam + '</td>';
+            var investigator = (g.votelog.investigator[j] === id) ? '<i class="icon-question-sign"></i>' : '';
+            html += '<td class="' + approve + ' ' + reject + ' ' + leader + '">' + onteam + ' ' + investigator + '</td>';
         }
         html += '</tr>';
     }
@@ -633,6 +665,12 @@ var arrangePlayers = function(data) {
                 .css('left', g.players[i].x + leaderOffsetX)
                 .css('top',  g.players[i].y + leaderOffsetY)
                 .click(onClickUserTile(g.leader));
+        }
+        
+        if (g.investigator === g.players[i].id) {
+            $('#investigator-mark')
+                .css('left', g.players[i].x + investigatorOffsetX)
+                .css('top',  g.players[i].y);
         }
     }
     

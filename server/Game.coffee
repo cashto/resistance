@@ -690,19 +690,16 @@ class Game extends Room
         
         @score.push success
         @sendAll 'scoreboard', @getScoreboard()
-        @checkScoreForWinners (doneCb) =>
-            @round = 1
-            @mission++
-            @nextRound()
+        @checkScoreForWinners()
     
-    checkScoreForWinners: (doneCb) ->
+    checkScoreForWinners: ->
         if (score for score in @score when not score).length is 3
             return @spiesWin() if @gameType isnt HUNTER_GAMETYPE
             return @askSpyHunterToAcuse()
         if (score for score in @score when score).length is 3
             return @askToAssassinateMerlin() if @gameType isnt HUNTER_GAMETYPE
             return @askResHunterToAcuse()
-        doneCb()
+        @nextMission()
 
     askToAssassinateMerlin: ->
         return @resistanceWins() if @gameType isnt AVALON_GAMETYPE
@@ -754,10 +751,7 @@ class Game extends Room
                         @sendAll 'scoreboard', @getScoreboard()
                         @sendAllMsgAndGameLog "mission failure has been reversed!"
                         @ineligibleSpyHunterAccusees.push(response.choice[0])
-                        @checkScoreForWinners (doneCb) =>
-                            @round = 1
-                            @mission++
-                            @nextRound()
+                        @checkScoreForWinners()
                     doneCb()
                             
     askResHunterToAcuse: ->
@@ -786,11 +780,12 @@ class Game extends Room
                         @sendAll 'scoreboard', @getScoreboard()
                         @sendAllMsgAndGameLog "mission success has been reversed!"
                         @ineligibleResHunterAccusees.push(response.choice[0])
-                        @checkScoreForWinners (doneCb) =>
-                            @round = 1
-                            @mission++
-                            @nextRound()
+                        @checkScoreForWinners()
                     doneCb()
+    nextMission: ->
+        @round = 1
+        @mission++
+        @nextRound()
 
     spiesWin: ->
         @gameOver(true)

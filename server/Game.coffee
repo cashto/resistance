@@ -58,6 +58,10 @@ class Game extends Room
             usePretender: false
             useBlame: false
             useInquisitor: false
+        @ineligibleResHunterAccusees = []
+        @ineligibleSpyHunterAccusees = []
+        @spyHunterRevealed = false
+        @resHunterRevealed = false
         @startQuestionId = 1
         
     onRequest: (player, request) ->
@@ -296,15 +300,14 @@ class Game extends Room
                 else
                     ""
             if @gameType is HUNTER_GAMETYPE
-              for chiefs in [@resistanceChiefs, @spyChiefs]
-                  if p.id in chiefs
-                    if chiefs.length is 1
-                      roleMsg = "You are the #{p.role}. "
-                    else
-                      roleMsg = "You are a #{p.role}. "
-              if p.id in [@resistanceHunter, @spyHunter, @dummyAgent, @coordinator, @deepAgent, @pretender]
-                  roleMsg = "You are the #{p.role}. "
-                  
+                for chiefs in [@resistanceChiefs, @spyChiefs]
+                    if p.id in chiefs
+                      if chiefs.length is 1
+                        roleMsg = "You are the #{p.role}. "
+                      else
+                        roleMsg = "You are a #{p.role}. "
+                if p.id in [@resistanceHunter, @spyHunter, @dummyAgent, @coordinator, @deepAgent, @pretender]
+                    roleMsg = "You are the #{p.role}. "
 
             p.sendMsg "#{roleMsg}You are #{if p in @spies then 'a SPY' else 'RESISTANCE!'}! There are #{@spies.length} spies in this game."
             p.sendMsg whoIsInTheGame if @gameType is AVALON_GAMETYPE or @gameType is HUNTER_GAMETYPE
@@ -326,6 +329,11 @@ class Game extends Room
             ladyOfTheLake = @findPlayer(@ladyOfTheLake)
             @addCard ladyOfTheLake, @ladyInquisitorCard
             @ineligibleLadyOfTheLakeRecipients.push(ladyOfTheLake)
+            
+        if @gameType is HUNTER_GAMETYPE
+            @ineligibleResHunterAccusees.push(@findPlayer(@resistanceHunter))
+            @ineligibleSpyHunterAccusees.push(@spies...)
+            if @pretender? then @ineligibleSpyHunterAccusees.push(@findPlayer(@pretender))
             
         @db.createGame JSON.stringify(state), gameType, @activePlayers, @spies,
             (err, result) => 
@@ -682,12 +690,19 @@ class Game extends Room
         
         @score.push success
         @sendAll 'scoreboard', @getScoreboard()
+        @checkScoreForWinners (doneCb) =>
+            @round = 1
+            @mission++
+            @nextRound()
+    
+    checkScoreForWinners: (doneCb) ->
         if (score for score in @score when not score).length is 3
-            return @spiesWin()
-        return @askToAssassinateMerlin() if (score for score in @score when score).length is 3
-        @round = 1
-        @mission++
-        @nextRound()
+            return @spiesWin() if @gameType isnt HUNTER_GAMETYPE
+            return @askSpyHunterToAcuse()
+        if (score for score in @score when score).length is 3
+            return @askToAssassinateMerlin() if @gameType isnt HUNTER_GAMETYPE
+            return @askResHunterToAcuse()
+        doneCb()
 
     askToAssassinateMerlin: ->
         return @resistanceWins() if @gameType isnt AVALON_GAMETYPE
@@ -707,7 +722,76 @@ class Game extends Room
                         @sendAllMsgAndGameLog "#{assassin} guessed WRONG. #{@findPlayer(@merlin)} was Merlin, not #{response.choice[0]}!"
                         @resistanceWins()
                     doneCb()
-        
+    
+    askSpyHunterToAcuse: ->
+        spyHunter = @findPlayer(@spyHunter)
+        if @spyHunterRevealed is false
+            @spyHunterRevealed = true
+            @sendAll '-vote'
+            @sendPlayers(p) for p in @players
+            @sendAll "#{spyHunter} is the Spy Hunter"
+            @ineligibleResHunterAccusees.push(spyHunter)
+        target = 'Resistance Chief'
+        if @coordinator? then target += ' or Coordinator'
+        @ask 'choosing a player to accuse as the ' + target + ' ...',
+            @makeQuestions [spyHunter],
+                cmd: 'choosePlayers'
+                msg: 'Choose a player to accuse as ' + target + '.'
+                n: 1
+                players: @getIds @everyoneExcept @ineligibleSpyHunterAccusees
+                (response, doneCb) =>   
+                    @sendAllMsgAndGameLog "#{spyHunter} chose to accuse #{response.choice[0]}."
+                    if response.choice[0].id in @resistanceChiefs
+                        @sendAllMsgAndGameLog "#{spyHunter} guessed RIGHT. #{response.choice[0]} was #{if @resistanceChiefs.length < 2 then 'the' else 'a'} Resistance Chief!"
+                        @spiesWin()
+                    else if response.choice[0].id is @coordinator
+                        @sendAllMsgAndGameLog "#{spyHunter} guessed RIGHT. #{response.choice[0]} was the Coordinator!"
+                        @spiesWin()
+                    else
+                        @sendAllMsgAndGameLog "#{spyHunter} guessed WRONG. #{response.choice[0]} is not a #{target}!"
+                        @score.pop()
+                        @score.push(true)
+                        @sendAll 'scoreboard', @getScoreboard()
+                        @sendAllMsgAndGameLog "mission failure has been reversed!"
+                        @ineligibleSpyHunterAccusees.push(response.choice[0])
+                        @checkScoreForWinners (doneCb) =>
+                            @round = 1
+                            @mission++
+                            @nextRound()
+                    doneCb()
+                            
+    askResHunterToAcuse: ->
+        resHunter = @findPlayer(@resistanceHunter)
+        if @resHunterRevealed is false
+            @resHunterRevealed = true
+            @sendAll '-vote'
+            @sendPlayers(p) for p in @players
+            @sendAll "#{resHunter} is the Resistance Hunter"
+            @ineligibleSpyHunterAccusees.push(resHunter)
+        @ask 'choosing a player to accuse as the Spy Chief ...',
+            @makeQuestions [resHunter],
+                cmd: 'choosePlayers'
+                msg: 'Choose a player to accuse as Spy Chief.'
+                n: 1
+                players: @getIds @everyoneExcept @ineligibleResHunterAccusees
+                (response, doneCb) =>   
+                    @sendAllMsgAndGameLog "#{resHunter} chose to accuse #{response.choice[0]}."
+                    if response.choice[0].id in @spyChiefs
+                        @sendAllMsgAndGameLog "#{resHunter} guessed RIGHT. #{response.choice[0]} was #{if @resistanceChiefs.length < 2 then 'the' else 'a'} Spy Chief!"
+                        @resistanceWins()
+                    else
+                        @sendAllMsgAndGameLog "#{resHunter} guessed WRONG. #{response.choice[0]} is not a Spy Chief!"
+                        @score.pop()
+                        @score.push(false)
+                        @sendAll 'scoreboard', @getScoreboard()
+                        @sendAllMsgAndGameLog "mission success has been reversed!"
+                        @ineligibleResHunterAccusees.push(response.choice[0])
+                        @checkScoreForWinners (doneCb) =>
+                            @round = 1
+                            @mission++
+                            @nextRound()
+                    doneCb()
+
     spiesWin: ->
         @gameOver(true)
 
@@ -809,7 +893,8 @@ class Game extends Room
                   iKnowTheyAreASpy =
                     me.id is them.id or
                     (isSpy(me) and me.id isnt @deepAgent and
-                     not (@pretender? and them.id is @deepAgent))
+                     not (@pretender? and them.id is @deepAgent)) or
+                    (@spyHunterRevealed and them.id is @spyHunter)
                 else
                   iKnowTheyAreASpy =
                     me.id is them.id or
@@ -821,7 +906,9 @@ class Game extends Room
                     id: them.id
                     name: them.name
                     role:
-                        if @gameFinished or me.id is them.id
+                        if @gameFinished or (me.id is them.id) or
+                          (@resHunterRevealed and them.id is @resistanceHunter) or
+                          (@spyHunterRevealed and them.id is @spyHunter)
                             them.role
                         else if me.id is @percival and (them.id is @merlin or them.id is @morgana)
                             if @morgana? then "Merlin?" else "Merlin"

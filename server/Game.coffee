@@ -332,8 +332,7 @@ class Game extends Room
             
         if @gameType is HUNTER_GAMETYPE
             @ineligibleResHunterAccusees.push(@findPlayer(@resistanceHunter))
-            @ineligibleSpyHunterAccusees.push(@spies...)
-            if @pretender? then @ineligibleSpyHunterAccusees.push(@findPlayer(@pretender))
+            @ineligibleSpyHunterAccusees.push(@findPlayer(@spyHunter))
             
         @db.createGame JSON.stringify(state), gameType, @activePlayers, @spies,
             (err, result) => 
@@ -592,6 +591,7 @@ class Game extends Room
                 
     askMissionMembersForVote: (context) ->
         context.votes = []
+        context.spyChiefFail = false
         team = context.team
         spyChiefsOnTeam = []
         if @spyChiefs?
@@ -615,8 +615,9 @@ class Game extends Room
             questionsSpyChiefs = @makeQuestions spyChiefsOnTeam,
                 cmd: 'choose'
                 msg: 'Do you want the mission to succeed or fail?'
-                choices: ['Succeed', 'Chief Fail']
+                choices: ['Succeed', "#{if @activePlayers.length > 6 then 'Chief Fail' else 'Fail'}"]
                 (response, doneCb) => 
+                    context.spyChiefFail = true if response.choice isnt 'Succeed'
                     context.votes.push(response)
                     doneCb()
             questions.push(questionsSpyChiefs...) if questionsSpyChiefs.length > 0
@@ -683,13 +684,17 @@ class Game extends Room
         actualFailures = (vote for vote in context.votes when vote.choice isnt 'Succeed').length
         success = actualFailures < requiredFailures
         msg = "The mission #{if success then 'SUCCEEDED' else 'FAILED'}. #{nPlayers[actualFailures]} voted for failure."
-        if @gameType is HUNTER_GAMETYPE and !success
+        chiefFailures = 0
+        if @gameType is HUNTER_GAMETYPE and @activePlayers.length > 6 and actualFailures > 0
             chiefFailures = (vote for vote in context.votes when vote.choice is 'Chief Fail').length
             msg += chiefFailMsg[chiefFailures]
         @sendAllMsgAndGameLog msg
         
         @score.push success
         @sendAll 'scoreboard', @getScoreboard()
+        if @gameType is HUNTER_GAMETYPE and !success and (@activePlayers.length > 6 and chiefFailures > 0) and
+          (score for score in @score when not score).length < 3
+              return @askEarlySpyHunterAccuse(context)
         @checkScoreForWinners()
     
     checkScoreForWinners: ->
@@ -720,6 +725,28 @@ class Game extends Room
                         @resistanceWins()
                     doneCb()
     
+    askEarlySpyHunterAccuse: (context) ->
+        return @checkScoreForWinners() if @earlyAccusationUsed
+        spyHunter = @findPlayer(@spyHunter)
+        target = 'Resistance Chief'
+        if @coordinator? then target += ' or Coordinator'
+        @ask 'Spy Hunter is choosing whether or not to accuse the ' + target + ' early ...',
+            @makeQuestions [spyHunter],
+                cmd: 'choose'
+                msg: 'Choose whether or not to accuse the ' + target + ' early.'
+                choices: ["Don't Accuse Yet", "Accuse Early"]
+                (response, doneCb) => 
+                    if response.choice is "Accuse Early"
+                        if context.spyChiefFail is true
+                            @earlyAccusationUsed = true
+                            @sendAllMsgAndGameLog 'Spy Hunter chooses to accuse NOW!'
+                            @askSpyHunterToAcuse()
+                            return doneCb()
+                        response.player.sendMsg "You cannot accuse yet! Spy Chief has to fail a mission before you can accuse early."
+                    @sendAllMsgAndGameLog 'Spy Hunter chooses not to accuse early.'
+                    @checkScoreForWinners()
+                    doneCb()
+        
     askSpyHunterToAcuse: ->
         spyHunter = @findPlayer(@spyHunter)
         if @spyHunterRevealed is false
@@ -782,6 +809,7 @@ class Game extends Room
                         @ineligibleResHunterAccusees.push(response.choice[0])
                         @checkScoreForWinners()
                     doneCb()
+
     nextMission: ->
         @round = 1
         @mission++
@@ -1007,6 +1035,7 @@ class Game extends Room
         if @gameType is HUNTER_GAMETYPE
           state.resistanceChiefs = []
           state.spyChiefs = []
+          state.earlyAccusationUsed = false
           
         for role, i in roles
             @activePlayers[i].role = role

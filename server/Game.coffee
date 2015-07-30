@@ -691,19 +691,22 @@ class Game extends Room
         @sendAllMsgAndGameLog msg
         
         @score.push success
+        context.success = success
         @sendAll 'scoreboard', @getScoreboard()
-        if @gameType is HUNTER_GAMETYPE and !success and (@activePlayers.length > 6 and chiefFailures > 0) and
+        if @gameType is HUNTER_GAMETYPE and !success and
+          (@activePlayers.length < 7 or chiefFailures > 0) and
           (score for score in @score when not score).length < 3
               return @askEarlySpyHunterAccuse(context)
-        @checkScoreForWinners()
+        @checkScoreForWinners(context)
     
-    checkScoreForWinners: ->
+    checkScoreForWinners: (context) ->
         if (score for score in @score when not score).length is 3
             return @spiesWin() if @gameType isnt HUNTER_GAMETYPE
-            return @askSpyHunterToAcuse()
+            return @askSpyHunterToAcuse(context)
         if (score for score in @score when score).length is 3
             return @askToAssassinateMerlin() if @gameType isnt HUNTER_GAMETYPE
-            return @askResHunterToAcuse()
+            return @askResHunterToAcuse(context)
+        return @askInvestigator(context) if context.investigator?
         @nextMission()
 
     askToAssassinateMerlin: ->
@@ -726,28 +729,29 @@ class Game extends Room
                     doneCb()
     
     askEarlySpyHunterAccuse: (context) ->
-        return @checkScoreForWinners() if @earlyAccusationUsed
+        return @checkScoreForWinners(context) if @earlyAccusationUsed
         spyHunter = @findPlayer(@spyHunter)
+        
         target = 'Resistance Chief'
         if @coordinator? then target += ' or Coordinator'
-        @ask 'Spy Hunter is choosing whether or not to accuse the ' + target + ' early ...',
-            @makeQuestions [spyHunter],
-                cmd: 'choose'
-                msg: 'Choose whether or not to accuse the ' + target + ' early.'
-                choices: ["Don't Accuse Yet", "Accuse Early"]
-                (response, doneCb) => 
-                    if response.choice is "Accuse Early"
-                        if context.spyChiefFail is true
-                            @earlyAccusationUsed = true
-                            @sendAllMsgAndGameLog 'Spy Hunter chooses to accuse NOW!'
-                            @askSpyHunterToAcuse()
-                            return doneCb()
-                        response.player.sendMsg "You cannot accuse yet! Spy Chief has to fail a mission before you can accuse early."
-                    @sendAllMsgAndGameLog 'Spy Hunter chooses not to accuse early.'
-                    @checkScoreForWinners()
-                    doneCb()
+        options = ["Do Not Accuse"]
+        options.push("Accuse Now") if context.spyChiefFail
         
-    askSpyHunterToAcuse: ->
+        @setStatus "Spy Hunter is choosing whether or not to accuse the #{target} early ..."
+        @askOne spyHunter,
+            cmd: 'choose'
+            msg: "Choose whether or not to accuse the #{target} early."
+            choices: options
+            (response) =>
+                if response.choice is "Accuse Now"
+                    @earlyAccusationUsed = true
+                    @sendAllMsgAndGameLog 'Spy Hunter chooses to accuse NOW!'
+                    @askSpyHunterToAcuse(context)
+                else
+                    @sendAllMsgAndGameLog 'Spy Hunter chooses not to accuse early.'
+                    @checkScoreForWinners(context)
+        
+    askSpyHunterToAcuse: (context) ->
         spyHunter = @findPlayer(@spyHunter)
         if @spyHunterRevealed is false
             @spyHunterRevealed = true
@@ -755,15 +759,17 @@ class Game extends Room
             @sendPlayers(p) for p in @players
             @sendAll "#{spyHunter} is the Spy Hunter"
             @ineligibleResHunterAccusees.push(spyHunter)
+            
         target = 'Resistance Chief'
         if @coordinator? then target += ' or Coordinator'
-        @ask 'choosing a player to accuse as the ' + target + ' ...',
+          
+        @ask "choosing a player to accuse as the #{target} ...",
             @makeQuestions [spyHunter],
                 cmd: 'choosePlayers'
-                msg: 'Choose a player to accuse as ' + target + '.'
+                msg: "Choose a player to accuse as #{target}."
                 n: 1
                 players: @getIds @everyoneExcept @ineligibleSpyHunterAccusees
-                (response, doneCb) =>   
+                (response) =>   
                     @sendAllMsgAndGameLog "#{spyHunter} chose to accuse #{response.choice[0]}."
                     if response.choice[0].id in @resistanceChiefs
                         @sendAllMsgAndGameLog "#{spyHunter} guessed RIGHT. #{response.choice[0]} was #{if @resistanceChiefs.length < 2 then 'the' else 'a'} Resistance Chief!"
@@ -778,10 +784,9 @@ class Game extends Room
                         @sendAll 'scoreboard', @getScoreboard()
                         @sendAllMsgAndGameLog "mission failure has been reversed!"
                         @ineligibleSpyHunterAccusees.push(response.choice[0])
-                        @checkScoreForWinners()
-                    doneCb()
+                        @checkScoreForWinners(context)
                             
-    askResHunterToAcuse: ->
+    askResHunterToAcuse: (context) ->
         resHunter = @findPlayer(@resistanceHunter)
         if @resHunterRevealed is false
             @resHunterRevealed = true
@@ -789,13 +794,14 @@ class Game extends Room
             @sendPlayers(p) for p in @players
             @sendAll "#{resHunter} is the Resistance Hunter"
             @ineligibleSpyHunterAccusees.push(resHunter)
+            
         @ask 'choosing a player to accuse as the Spy Chief ...',
             @makeQuestions [resHunter],
                 cmd: 'choosePlayers'
                 msg: 'Choose a player to accuse as Spy Chief.'
                 n: 1
                 players: @getIds @everyoneExcept @ineligibleResHunterAccusees
-                (response, doneCb) =>   
+                (response) =>   
                     @sendAllMsgAndGameLog "#{resHunter} chose to accuse #{response.choice[0]}."
                     if response.choice[0].id in @spyChiefs
                         @sendAllMsgAndGameLog "#{resHunter} guessed RIGHT. #{response.choice[0]} was #{if @resistanceChiefs.length < 2 then 'the' else 'a'} Spy Chief!"
@@ -807,8 +813,45 @@ class Game extends Room
                         @sendAll 'scoreboard', @getScoreboard()
                         @sendAllMsgAndGameLog "mission success has been reversed!"
                         @ineligibleResHunterAccusees.push(response.choice[0])
-                        @checkScoreForWinners()
-                    doneCb()
+                        @checkScoreForWinners(context)
+
+    askInvestigator: (context) ->
+        if context.success
+            investigator = @activePlayers[@leader]
+        else
+            investigator = context.investigator
+
+        @ask 'choosing a player to investigate ...',
+          @makeQuestions [investigator],
+              cmd: 'choosePlayers'
+              msg: 'Choose a player to investigate.'
+              n: 1
+              players: @getIds @everyoneExcept([investigator], context.team)
+              (response) =>
+                  @sendAllMsgAndGameLog "#{investigator} chooses to investigate #{response.choice}."
+                  @askToInvestigate(investigator, response.choice[0])
+            
+    askToInvestigate: (investigator, target) ->
+        options =
+          if target.id in @spyChiefs
+              ['Chief', 'Spy Chief']
+          else if target.id in @resistanceChiefs
+              if @activePlayers.length > 6
+                  ['Resistance Chief']
+              else
+                  ['Chief']
+          else if target.id is @dummyAgent
+              ['Chief', 'Not a Chief']
+          else
+              ['Not a Chief']
+        @ask 'choosing a reponse to investigation ...',
+            @makeQuestions [target],
+                cmd: 'choose'
+                msg: 'Choose a response to investigation.'
+                choices: options
+                (response) =>
+                    investigator.sendMsg "#{target} responds '#{response.choice}'"
+                    @nextMission()
 
     nextMission: ->
         @round = 1

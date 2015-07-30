@@ -232,7 +232,7 @@ class Game extends Room
                             @setAvalonOption(response.choice) if @gameType is AVALON_GAMETYPE
                             @setHunterOption(response.choice) if @gameType is HUNTER_GAMETYPE
                             @askToStartGame()
-        else
+        else if @gameType is HUNTER_GAMETYPE
           @updateAskOne @startQuestionId, gameController,
               cmd: 'choose'
               msg: message
@@ -508,7 +508,7 @@ class Game extends Room
                 n: 1
                 players: @getIds @everyoneExcept [context.team..., @activePlayers[@leader]]
                 (response) =>
-                    context.msg += " #{response.player} chose #{response.choice[0].name} as INVESTIGATOR."
+                    context.msg += " Investigator: #{response.choice[0].name}."
                     context.investigator = response.choice[0]
                     @votelog.investigator.pop()
                     @votelog.investigator.push(response.choice[0].id)

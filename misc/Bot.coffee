@@ -61,7 +61,7 @@ class Bot
         
     considerJoinGame: ->
         if Math.random() < 0.03 and true
-            return @sendAjax body: { cmd: 'join', gameType: rand [1,2] }, cb: @gameLoop
+            return @sendAjax body: { cmd: 'join', gameType: rand [1,2,5] }, cb: @gameLoop
         if @games.length is 0 or Math.random() < 0.5
             return setTimeout (=> @gameLoop()), 1000
         game = rand @games

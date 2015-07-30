@@ -89,6 +89,7 @@ class Game extends Room
         player.send(q.question.cmd, q.question) for q in @questions when q.player.id is player.id
         player.send 'gameover' if @gameFinished
         player.send 'guns', { players:@guns }
+        player.send 'investigator', { player:@investigator }
         player.send 'votelog', @votelog
         @evaluateChatRestrictions(player)
 

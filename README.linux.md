@@ -18,7 +18,10 @@ $ exit
 ## Set the environment variables
 
 ```
-export RESISTANCE_DB_CONNECTION_STRING="postgres://mypguser:mypguserpass@localhost/mypgdatabase" 
+{
+    "port": 8080,
+    "db_connection_string": "postgres://mypguser:mypguserpass@localhost/mypgdatabase"
+}
 ```
 
 Or equivalent for your choice of hostname, user, password and database name above.
@@ -45,7 +48,7 @@ make
 ## Run
 
 ```
-node release/Server.js
+node release/Server.js sample_options.json
 ```
 
 And connect on [http://localhost:8080](http://localhost:8080)

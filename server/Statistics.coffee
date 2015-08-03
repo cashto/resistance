@@ -90,6 +90,8 @@ class Statistics
             2: "Avalon"
             3: "Basic"
             4: "Avalon+"
+            5: "Hunter"
+            6: "Hunter+"
         if tables.games.length > 0
           max = Math.min(25,tables.games.length)
           for i in [0 ... max]
@@ -106,11 +108,11 @@ class Statistics
         return html
         
     getWinRates: (tables) ->
-        html = "<table class='table table-striped table-condensed'><tr><th>Players</th> <th>Basic</th> <th>Original</th> <th>Avalon</th> <th>Avalon+</th></tr>"
+        html = "<table class='table table-striped table-condensed'><tr><th>Players</th> <th>Basic</th> <th>Original</th> <th>Avalon</th> <th>Avalon+</th> <th>Hunter</th> <th>Hunter+</th></tr>"
         
         for n in [5 .. 10]
             html += "<tr><td>#{n}</td>"
-            for type in [3, 1, 2, 4]
+            for type in [3, 1, 2, 4, 5, 6]
                 games = tables.games.filter((i) -> i.spies.length + i.resistance.length is n and i.gameType is type)
                 html += "<td>#{@frac(games.filter((i) -> i.spiesWin).length, games.length)}</td> "
             html += "</tr>"

@@ -153,6 +153,9 @@ var onLeave = function() {
 }
 
 var onChat = function(data) {
+    if (data.isSpectator && $('#mute-spectators').prop('checked')) {
+        return;
+    }
     updateChat($('#chat-text'), data);
     highlightTab('#chat-nav-tab');
 }

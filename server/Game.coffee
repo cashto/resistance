@@ -129,6 +129,7 @@ class Game extends Room
                 player: (if player? then player.name else 'server')
                 msg: request.msg
             cmd.serverMsg = true if not player?
+            cmd.isSpectator = player? and @gameStarted and not @gameFinished and not @activePlayers.some (i) -> i.id is player.id
             p.send 'chat', cmd
             
     onAllChat: (player, request) ->

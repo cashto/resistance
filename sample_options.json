@@ -1,0 +1,4 @@
+{
+    "port": 8080,
+    "db_connection_string": "Driver={SQL Server Native Client 11.0};Server=<server>;Database=<database>;uid=<username>;pwd=<password>"
+}

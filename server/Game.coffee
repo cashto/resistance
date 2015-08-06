@@ -831,14 +831,20 @@ class Game extends Room
     askToInvestigate: (investigator, target) ->
         options =
           if target.id in @spyChiefs
-              ['Chief', 'Spy Chief']
+              if @activePlayers.length > 6
+                  ['Spy Chief']
+              else
+                  ['Chief']
           else if target.id in @resistanceChiefs
               if @activePlayers.length > 6
                   ['Resistance Chief']
               else
                   ['Chief']
           else if target.id is @dummyAgent
-              ['Chief', 'Not a Chief']
+              if @activePlayers.length > 6
+                ['Resistance Chief', 'Not a Chief']
+              else
+                ['Chief', 'Not a Chief']
           else
               ['Not a Chief']
         @ask 'choosing a reponse to investigation ...',

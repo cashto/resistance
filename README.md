@@ -14,16 +14,9 @@
 
 ##### Build and run the server
 
-* Set environment variable `RESISTANCE_DB_CONNECTION_STRING`.
-
-        set RESISTANCE_DB_CONNECTION_STRING=
-            Driver={SQL Server Native Client 11.0};
-            Server=localhost;
-            Database=resistancetest;
-            uid=<userid>;
-            pwd=<password>;
+* Edit sample_options.json
 * Run `build.cmd`
-* Run `node release\Server.js`
+* Run `node release\Server.js sample_options.json`
 * Navigate to [http://localhost/](http://localhost/)
 
 ### Overview

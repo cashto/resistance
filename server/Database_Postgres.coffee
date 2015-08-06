@@ -3,7 +3,7 @@ bcrypt = require 'bcryptjs'
 
 class Database
   constructor: ->
-    @connString = process.env.RESISTANCE_DB_CONNECTION_STRING # "postgres://username:password@host/dbname"
+    @connString = g.options.db_connection_string # "postgres://username:password@host/dbname"
 
   initialize: (cb) ->
     cb(null, null)

@@ -17,7 +17,7 @@ class AutoRetryConnection
                 else
                     cb(err,conn))
     initialize: (cb) ->
-        sql.open process.env.RESISTANCE_DB_CONNECTION_STRING, (err, conn) => 
+        sql.open g.options.db_connection_string, (err, conn) => 
             @conn = if err then null else conn
             cb(err, conn)    
             
